@@ -1,13 +1,26 @@
 """BlackScholesLab: a transparent and carefully tested Black-Scholes toolkit.
 
-This package is in early development. The mathematical core described in the
-documentation is not yet implemented. Only package metadata is exposed here.
+The development version implements the European option pricing core:
+
+- :class:`BlackScholesInputs` — immutable, typed pricing inputs.
+- :class:`OptionType` — call/put enumeration.
+- :func:`price_european` — analytical European call and put pricing.
 """
 
 from __future__ import annotations
+
+from blackscholeslab.models import BlackScholesInputs, OptionType
+from blackscholeslab.pricing import price_european
 
 __version__ = "0.1.0.dev0"
 __author__ = "Amrut Deshmukh"
 __license__ = "MIT"
 
-__all__ = ["__version__", "__author__", "__license__"]
+__all__ = [
+    "BlackScholesInputs",
+    "OptionType",
+    "price_european",
+    "__version__",
+    "__author__",
+    "__license__",
+]

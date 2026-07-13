@@ -2,12 +2,11 @@
 
 This roadmap describes the planned stages for BlackScholesLab. Stages are
 marked as **Completed**, **In progress**, or **Planned** to distinguish actual
-state from future intent. The project does not yet implement any mathematical
-functionality.
+state from future intent.
 
 ## Stage 1 — Repository foundation
 
-**Status: In progress**
+**Status: Completed**
 
 - `src`-based package layout.
 - Packaging with `pyproject.toml` and a standards-compliant build backend.
@@ -20,12 +19,15 @@ functionality.
 
 ## Stage 2 — European call and put pricing
 
-**Status: Planned**
+**Status: Completed**
 
-- Option data models and option-type definitions.
-- Input validation.
-- Analytical pricing for European call and put options.
-- Behaviour at expiry and edge-case verification.
+- Option data models (`BlackScholesInputs`) and option-type definitions
+  (`OptionType`).
+- Input validation with explicit error handling.
+- Analytical pricing for European call and put options (`price_european`).
+- Continuous dividend-yield support.
+- Behaviour at expiry and zero-volatility handling.
+- Reference, parity, and invariant tests.
 
 ## Stage 3 — Analytical Greeks
 
@@ -79,5 +81,6 @@ functionality.
 
 ## Notes
 
-No mathematical feature listed above is implemented yet. Progress will be
+European call and put pricing is implemented in the development version but the
+project remains unreleased and is not available from PyPI. Progress will be
 tracked through issues and pull requests against the repository.

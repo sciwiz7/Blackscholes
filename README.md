@@ -4,10 +4,10 @@ A transparent and carefully tested Python toolkit for European option pricing,
 analytical Greeks, implied-volatility calculation, and scenario analysis based
 on the Black-Scholes framework.
 
-> **Status: early development.** This project is in its foundation stage. The
-> mathematical core (pricing, Greeks, implied volatility, scenario analysis)
-> has **not** been implemented yet. The repository currently contains project
-> structure, packaging, tooling, and documentation only. Do not rely on this
+> **Status: early development.** The European call and put pricing core is
+> implemented in the current development version, but the project remains
+> **unreleased** and is **not yet available from PyPI**. Greeks, implied
+> volatility, and scenario analysis are not implemented. Do not rely on this
 > project for calculations until a stable release is published.
 
 ## Purpose
@@ -16,11 +16,19 @@ BlackScholesLab is built for people who want to understand and verify
 option-pricing mathematics rather than treat it as a black box. Every
 calculation is intended to be transparent, deterministic, and reproducible.
 
+## Implemented capabilities (development version)
+
+The following are implemented in the current development version:
+
+- European call and put option pricing under Black-Scholes-Merton.
+- Continuous dividend-yield support.
+- Explicit input validation.
+- Deterministic, fully tested reference and invariant tests.
+
 ## Planned capabilities
 
 The following capabilities are planned and will be added in later stages:
 
-- European call and put option pricing
 - Analytical Greeks (delta, gamma, vega, theta, rho)
 - Implied-volatility calculation
 - Payoff analysis
@@ -29,7 +37,7 @@ The following capabilities are planned and will be added in later stages:
 - Command-line usage
 - An optional interactive demonstration
 
-None of these are available yet.
+These are not available yet.
 
 ## Intended users
 
@@ -53,8 +61,10 @@ None of these are available yet.
 
 ## Installation
 
-**Installation is not available yet.** There is no published release. The
-package cannot be installed from PyPI, and no stable API exists.
+**Installation is not available yet from PyPI.** There is no published release.
+The European pricing core is available only in the development version of the
+source repository and should be installed from source for evaluation and
+testing. It is not yet published on a package index.
 
 Once the first release is published, installation will be documented here.
 
@@ -68,6 +78,32 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
+
+## Minimal working example
+
+```python
+from blackscholeslab import (
+    BlackScholesInputs,
+    OptionType,
+    price_european,
+)
+
+inputs = BlackScholesInputs(
+    spot=42.0,
+    strike=40.0,
+    time_to_expiry=0.5,
+    risk_free_rate=0.10,
+    volatility=0.20,
+)
+
+call_price = price_european(inputs, OptionType.CALL)
+put_price = price_european(inputs, OptionType.PUT)
+```
+
+This computes the Black-Scholes-Merton European call and put prices for a
+non-dividend-paying underlying. See
+[Mathematical conventions](docs/mathematical-conventions.md) for the formulas,
+units, and validation rules.
 
 ## Quality commands
 
