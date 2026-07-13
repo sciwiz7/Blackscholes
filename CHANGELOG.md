@@ -58,13 +58,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     tests, bracketing and maximum-volatility tests, and put-call parity and
     repricing-consistency tests.
   - Configurable tolerances and iteration limits with clear error policies.
+  - Payoff and scenario analysis for European options:
+    - `intrinsic_payoff` — intrinsic expiry payoff for European call and put
+      options (`max(S - K, 0)` for calls, `max(K - S, 0)` for puts).
+    - `expiry_profit_loss` — long-option expiry profit and loss after an
+      explicitly paid premium (`intrinsic_payoff - premium`).
+    - `ExpiryScenarioResult` — immutable, typed expiry scenario result
+      (underlying price, payoff, profit and loss).
+    - `evaluate_expiry_scenarios` — ordered expiry payoff/P&L evaluation over
+      supplied underlying prices, preserving order and duplicates.
+    - `OptionScenario` — immutable, typed pre-expiry scenario definition (spot,
+      time to expiry, volatility, risk-free rate, dividend yield, optional label).
+    - `ScenarioPriceResult` — immutable, typed scenario price result (scenario,
+      option price, absolute change, decimal percentage change).
+    - `evaluate_price_scenarios` — pre-expiry repricing under scenario
+      assumptions, reusing `price_european` as the single pricing oracle.
+    - Immutable, ordered result tuples for both expiry and pre-expiry analysis.
+    - Explicit premium semantics (long option, one unit, no discounting, no
+      multiplier, no inferred short position).
+    - Explicit `percentage_change` semantics (decimal return; `None` when the
+      base price is exactly zero).
+    - Reference and invariant tests covering payoff monotonicity, break-even
+      behaviour, order/duplicate preservation, scenario monotonicity, base-price
+      consistency, and zero-base-price percentage handling.
 
 ### Not yet implemented
 
 The following planned capabilities are **not** part of this release and have
 no implemented code:
 
-- Payoff and scenario analysis
 - Command-line interface
 - Interactive demonstration
 
