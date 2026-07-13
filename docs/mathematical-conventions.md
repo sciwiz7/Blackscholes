@@ -1,9 +1,9 @@
 # Mathematical conventions
 
 This document records the mathematical conventions used by the implemented
-Black-Scholes-Merton European pricing core in BlackScholesLab. Items marked
-**Unresolved** concern future capabilities (Greeks, implied volatility) and are
-not settled by this implementation.
+Black-Scholes-Merton European pricing core and implied-volatility solver in
+BlackScholesLab. Items marked **Unresolved** concern future capabilities
+(scenario analysis) and are not settled by this implementation.
 
 ## Market inputs
 
@@ -117,6 +117,108 @@ max( K * exp(-r * T) - S * exp(-q * T), 0 )
 
 Zero volatility is supported explicitly; the implementation does **not** replace
 it with an epsilon.
+
+## Implied volatility
+
+The `implied_volatility` solver recovers the annualised volatility `sigma` that
+makes `price_european` match an observed `market_price`. It is deterministic and
+reuses `price_european` as its single pricing oracle; it never reimplements the
+pricing formula.
+
+### Market price
+
+`market_price` is the observed European option price (currency). It is a single
+scalar and must be non-negative.
+
+### Annualised decimal volatility output
+
+The solver returns `sigma` as an **annualised decimal** volatility (for example
+`0.20` for 20%), expressed in calendar years. No percentage scaling is applied
+to the output, and the value is not rounded.
+
+### European no-arbitrage bounds
+
+For `S = spot`, `K = strike`, `T = time_to_expiry`, `r = risk_free_rate`,
+`q = dividend_yield`:
+
+```
+discounted_spot   = S * exp(-q * T)
+discounted_strike = K * exp(-r * T)
+```
+
+Call bounds:
+
+```
+lower_call = max(discounted_spot - discounted_strike, 0)
+upper_call = discounted_spot
+```
+
+Put bounds:
+
+```
+lower_put = max(discounted_strike - discounted_spot, 0)
+upper_put = discounted_strike
+```
+
+The solver validates `market_price` before solving:
+
+- If `market_price` is below the applicable lower bound, `ValueError` is raised.
+  A below-lower-bound price is never reinterpreted as zero volatility.
+- If `market_price` equals the lower bound, the solver returns exactly `0.0`
+  (the zero-volatility deterministic price).
+- If `market_price` is at or above the upper bound, `ValueError` is raised
+  because no finite implied volatility produces that price.
+
+### Zero-volatility lower-bound interpretation
+
+The lower bound is the exact deterministic price of the option when `sigma = 0`
+with positive time to expiry. It is the minimum attainable European price and
+corresponds to `sigma = 0`.
+
+### Infinite-volatility upper-bound interpretation
+
+The upper bound is approached only as `sigma -> infinity`. Equality with the
+upper bound therefore has no finite solution, which is why it is rejected rather
+than clamped.
+
+### Time-to-expiry requirement
+
+Implied volatility requires strictly positive `T`. At `T = 0` the option is at
+expiry and its value is the intrinsic payoff, which is independent of
+volatility, so `ImpliedVolatilityInputs` rejects `T <= 0`.
+
+### Tolerance meanings
+
+- `price_tolerance` (default `1e-10`): absolute price tolerance. Bisection stops
+  when `|price(midpoint) - market_price| <= price_tolerance`.
+- `volatility_tolerance` (default `1e-12`): absolute volatility-interval
+  tolerance. Bisection also stops when `upper_volatility - lower_volatility <=
+  volatility_tolerance`, returning the midpoint of the final interval.
+
+Both must be finite, strictly positive real numbers.
+
+### Maximum-volatility policy
+
+`initial_upper_volatility` (default `0.5`) seeds the upper bracket. If the price
+at that volatility is still below `market_price`, the upper bound is doubled
+repeatedly, never exceeding `max_volatility` (default `10.0`). If the price at
+`max_volatility` is still below `market_price`, `ValueError` is raised; the
+solver never silently returns `max_volatility`. `initial_upper_volatility` must
+not exceed `max_volatility`.
+
+### Non-convergence policy
+
+Bisection runs for at most `max_iterations` (default `200`) iterations. If it
+does not satisfy the price or volatility tolerance within that limit, a
+`RuntimeError` is raised; the solver never returns an unconverged value.
+
+### IEEE-754 limitations
+
+The implementation uses IEEE 754 double precision. Extremely small positive
+volatilities may be numerically indistinguishable from the zero-volatility lower
+bound in floating-point arithmetic; the solver does not special-case such cases
+beyond the exact lower-bound equality check. No arbitrary clamps or epsilons are
+applied to prices or volatilities.
 
 ## Invalid-input handling
 
