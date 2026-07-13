@@ -1,9 +1,10 @@
 # Architecture
 
 This document describes the **actual** architecture of the BlackScholesLab
-development version. The European pricing core is implemented. Planned modules
-for Greeks, implied volatility, scenario analysis, CLI, and demonstration are
-described as future connections and are not yet present.
+development version. The European pricing core, analytical Greeks, implied
+volatility solver, payoff analysis, and pre-expiry scenario analysis are
+implemented. CLI and demonstration remain future connections and are not yet
+present.
 
 ## Goals
 
@@ -30,6 +31,8 @@ src/blackscholeslab/
     pricing.py        # European Black-Scholes-Merton pricing
     greeks.py         # Analytical Greeks and OptionGreeks result model
     implied_volatility.py  # Implied-volatility solver and market-input model
+    payoff.py         # Intrinsic payoff, expiry P&L, expiry scenario evaluation
+    scenarios.py      # Pre-expiry scenario model and scenario repricing
 ```
 
 The exact module layout may be refined during later stages, but the current
@@ -120,12 +123,55 @@ constructs a `BlackScholesInputs` for each candidate volatility and calls
 `price_european`. The pricing core remains the single source of truth. There is
 no dependency from `pricing.py` (or `greeks.py`) back to the solver.
 
+### Payoff (`payoff.py`)
+
+`payoff.py` implements deterministic, explicitly validated payoff analysis for
+European options. It provides `intrinsic_payoff`, `expiry_profit_loss`, the
+immutable `ExpiryScenarioResult` result model, and `evaluate_expiry_scenarios`.
+
+- `intrinsic_payoff(underlying_price, strike, option_type)` returns the
+  non-negative intrinsic payoff at expiry (call: `max(S - K, 0)`; put:
+  `max(K - S, 0)`).
+- `expiry_profit_loss(underlying_price, strike, option_type, premium)` returns
+  `intrinsic_payoff(...) - premium` for a long option purchased at the supplied
+  premium. No discounting, contract multiplier, or position quantity is applied,
+  and short positions are not inferred.
+- `evaluate_expiry_scenarios(underlying_prices, strike, option_type, premium=0.0)`
+  evaluates payoff and P&L over the supplied underlying prices, preserving order
+  and duplicates and returning an immutable tuple of `ExpiryScenarioResult`.
+
+`payoff.py` depends only on `models` and `validation`. It does **not** use
+`price_european` because it describes intrinsic value and long-option P&L, not
+priced option value. Invalid inputs raise `TypeError` or `ValueError` through the
+shared `validate_real_number` and `validate_option_type` helpers, with malformed
+items reported by zero-based index.
+
+### Scenario analysis (`scenarios.py`)
+
+`scenarios.py` implements pre-expiry scenario analysis for European options. It
+defines the immutable `OptionScenario` scenario model (spot, time to expiry,
+volatility, risk-free rate, dividend yield, optional label) and the immutable
+`ScenarioPriceResult` result model (scenario, option price, absolute change,
+decimal percentage change), plus `evaluate_price_scenarios`.
+
+`evaluate_price_scenarios(base_inputs, option_type, scenarios)` computes the base
+price once with `price_european`, then reprices each scenario by constructing a
+`BlackScholesInputs` that reuses the base `strike` and the scenario's own fields.
+The `percentage_change` is the decimal return `price_change / base_price`; when
+the base price is exactly `0.0`, `percentage_change` is `None` rather than
+`inf` or a substituted value.
+
+`scenarios.py` depends on `models`, `validation`, and `pricing`. Crucially, it
+does **not** reimplement the Black-Scholes formula: each scenario price is
+produced by `price_european`. The pricing core remains the single source of
+truth, and `pricing.py` does not depend on `scenarios.py`.
+
 ## Dependency direction
 
 The dependency graph is strictly layered and acyclic:
 
 ```
-cli / demo  ->  pricing / greeks / implied_volatility  ->  models / validation / numerical
+cli / demo  ->  pricing / greeks / implied_volatility / payoff / scenarios  ->  models / validation / numerical
 ```
 
 - Future interfaces (CLI, demo) will depend on the core (`pricing`, `greeks`,
@@ -158,6 +204,13 @@ following are exported:
   volatility.
 - `implied_volatility` — deterministic implied-volatility solver for European
   options.
+- `intrinsic_payoff` — intrinsic expiry payoff for European options.
+- `expiry_profit_loss` — long-option expiry profit and loss after a paid premium.
+- `ExpiryScenarioResult` — immutable expiry scenario result model.
+- `evaluate_expiry_scenarios` — ordered expiry payoff/P&L evaluation.
+- `OptionScenario` — immutable pre-expiry scenario definition.
+- `ScenarioPriceResult` — immutable scenario price result model.
+- `evaluate_price_scenarios` — pre-expiry scenario repricing.
 - `__version__`, `__author__`, `__license__` — package metadata.
 
 Internal helpers (`validate_inputs`, `validate_real_number`, `norm_cdf`,
@@ -167,14 +220,19 @@ public API. The `greeks_european` function reuses `validate_option_type` from
 `validation` and `norm_cdf` from `numerical`; the new `_norm_pdf` helper is
 private to `greeks.py`. The solver reuses `price_european` from `pricing` as its
 pricing oracle and reuses `validate_real_number` and `validate_option_type` from
-`validation`.
+`validation`. The scenario module reuses `price_european` from `pricing` as its
+pricing oracle and reuses `validate_inputs`, `validate_real_number`, and
+`validate_option_type` from `validation`; the `OptionScenario` model validates
+its own fields on construction.
 
 ## Future module connections
 
 - **Implied volatility** (implemented): reuses `models`, `validation`,
   `numerical`, and `price_european` as the pricing oracle for root-finding.
-- **Scenario/payoff analysis** (future): will reuse `models`, `pricing`, and may
-  reuse `price_european` and `implied_volatility`.
+- **Payoff analysis** (implemented): reuses `models` and `validation`. It does
+  not price options and does not depend on `pricing`.
+- **Scenario analysis** (implemented): reuses `models`, `validation`, and
+  `pricing`, using `price_european` as its pricing oracle.
 - **CLI** and **demonstration** (future, optional): will depend on the core but
   never the reverse, and will not be imported by the core.
 
@@ -207,7 +265,8 @@ values or silently clamp inputs.
 
 ## Status
 
-The European pricing core (`models`, `validation`, `numerical`, `pricing`) and
-the analytical Greeks (`greeks.py`) are implemented and tested. See
-[ROADMAP.md](../ROADMAP.md) for the staged plan and the remaining planned
-capabilities.
+The European pricing core (`models`, `validation`, `numerical`, `pricing`), the
+analytical Greeks (`greeks.py`), the implied-volatility solver
+(`implied_volatility.py`), the payoff module (`payoff.py`), and the scenario
+module (`scenarios.py`) are implemented and tested. See [ROADMAP.md](../ROADMAP.md)
+for the staged plan and the remaining planned capabilities.

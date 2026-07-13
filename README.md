@@ -5,10 +5,10 @@ analytical Greeks, implied-volatility calculation, and scenario analysis based
 on the Black-Scholes framework.
 
 > **Status: early development.** The European call and put pricing core, the
-> analytical Greeks, and implied-volatility solving are implemented in the
-> current development version, but the project remains **unreleased** and is
-> **not yet available from PyPI**. Scenario analysis is not implemented. Do not
-> rely on this project for calculations until a stable release is published.
+> analytical Greeks, implied-volatility solving, and payoff and scenario analysis
+> are implemented in the current development version, but the project remains
+> **unreleased** and is **not yet available from PyPI**. Do not rely on this
+> project for calculations until a stable release is published.
 
 ## Purpose
 
@@ -28,13 +28,18 @@ The following are implemented in the current development version:
   dividend yield, finite negative rates, and finite negative dividend yields.
 - Explicit input validation.
 - Deterministic, fully tested reference and invariant tests.
+- Payoff and scenario analysis for European options:
+  - Intrinsic expiry payoff (`intrinsic_payoff`).
+  - Expiry profit and loss after a paid premium (`expiry_profit_loss`).
+  - Ordered expiry payoff/P&L evaluation (`evaluate_expiry_scenarios`).
+  - Immutable pre-expiry scenario definitions (`OptionScenario`).
+  - Pre-expiry option repricing under scenario assumptions
+    (`evaluate_price_scenarios`).
 
 ## Planned capabilities
 
 The following capabilities are planned and will be added in later stages:
 
-- Payoff analysis
-- Scenario analysis
 - Educational visualisations
 - Command-line usage
 - An optional interactive demonstration
@@ -161,6 +166,69 @@ upper bound approached only as volatility tends to infinity. The solver returns
 annualised decimal volatility (for example `0.20` for 20%). See
 [Mathematical conventions](docs/mathematical-conventions.md) for the formulas,
 units, and validation rules.
+
+Payoff and scenario analysis example:
+
+```python
+from blackscholeslab import (
+    BlackScholesInputs,
+    OptionScenario,
+    OptionType,
+    evaluate_expiry_scenarios,
+    evaluate_price_scenarios,
+    expiry_profit_loss,
+    intrinsic_payoff,
+)
+
+# Intrinsic expiry payoff for a call with strike 100.
+call_payoff = intrinsic_payoff(underlying_price=120.0, strike=100.0, option_type=OptionType.CALL)
+# call_payoff is 20.0
+
+# Expiry profit and loss for a long call bought at a premium of 7.0.
+call_pnl = expiry_profit_loss(
+    underlying_price=120.0,
+    strike=100.0,
+    option_type=OptionType.CALL,
+    premium=7.0,
+)
+# call_pnl is 13.0 (payoff 20.0 minus premium 7.0)
+
+# Ordered expiry payoff/P&L evaluation across several underlying prices.
+expiry = evaluate_expiry_scenarios(
+    underlying_prices=[80.0, 100.0, 107.0, 120.0],
+    strike=100.0,
+    option_type=OptionType.CALL,
+    premium=7.0,
+)
+# expiry preserves order and duplicates; each result carries underlying_price,
+# payoff, and profit_loss.
+
+# Pre-expiry scenario repricing relative to a fixed-strike base case.
+base = BlackScholesInputs(
+    spot=100.0,
+    strike=100.0,
+    time_to_expiry=1.0,
+    risk_free_rate=0.05,
+    volatility=0.20,
+    dividend_yield=0.02,
+)
+scenarios = [
+    OptionScenario(spot=110.0, time_to_expiry=1.0, volatility=0.20, risk_free_rate=0.05),
+    OptionScenario(spot=90.0, time_to_expiry=0.5, volatility=0.30, risk_free_rate=0.08),
+]
+results = evaluate_price_scenarios(base, OptionType.CALL, scenarios)
+# The strike remains fixed at the base value (100.0); only scenario fields vary.
+# Each result carries scenario, option_price, price_change, and percentage_change.
+```
+
+The payoff API represents a **long** option purchased for the supplied premium.
+The premium is the amount paid for one option unit; no contract multiplier or
+position quantity is assumed, no discounting is applied inside `expiry_profit_loss`,
+and short positions are not inferred. `percentage_change` returned by
+`evaluate_price_scenarios` is a **decimal** return (for example `0.1` means a 10%
+increase); multiply by 100 if you need percentage points. When the base option
+price is exactly `0.0`, `percentage_change` is `None` rather than `inf` or a
+silently substituted value.
 
 The Greeks use raw decimal units, not percentage points:
 

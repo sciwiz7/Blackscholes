@@ -58,10 +58,24 @@ state from future intent.
 
 ## Stage 5 — Payoff and scenario analysis
 
-**Status: Planned**
+**Status: Completed**
 
-- Intrinsic payoff evaluation.
-- Batched scenario evaluation across input grids.
+- Intrinsic payoff evaluation (`intrinsic_payoff`) for European call and put
+  options.
+- Expiry profit and loss after an explicitly paid premium (`expiry_profit_loss`)
+  with explicit long-option and no-multiplier semantics.
+- Ordered expiry payoff/P&L evaluation (`evaluate_expiry_scenarios`) that
+  preserves input order and duplicate underlying prices and returns an immutable
+  tuple.
+- Immutable pre-expiry scenario definitions (`OptionScenario`).
+- Pre-expiry option repricing under scenario assumptions
+  (`evaluate_price_scenarios`), reusing `price_european` as the single pricing
+  oracle and keeping the strike fixed from the base case.
+- Immutable result models (`ExpiryScenarioResult`, `ScenarioPriceResult`) and
+  deterministic, fully tested reference and invariant tests.
+
+The core scenario evaluation deliberately avoids pandas, NumPy batch arrays, and
+plotting dependencies.
 
 ## Stage 6 — Command-line interface
 

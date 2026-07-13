@@ -1,9 +1,10 @@
 # Mathematical conventions
 
 This document records the mathematical conventions used by the implemented
-Black-Scholes-Merton European pricing core and implied-volatility solver in
-BlackScholesLab. Items marked **Unresolved** concern future capabilities
-(scenario analysis) and are not settled by this implementation.
+Black-Scholes-Merton European pricing core, implied-volatility solver, payoff
+analysis, and pre-expiry scenario analysis in BlackScholesLab. Items marked
+**Unresolved** concern future capabilities and are not settled by this
+implementation.
 
 ## Market inputs
 
@@ -219,6 +220,95 @@ volatilities may be numerically indistinguishable from the zero-volatility lower
 bound in floating-point arithmetic; the solver does not special-case such cases
 beyond the exact lower-bound equality check. No arbitrary clamps or epsilons are
 applied to prices or volatilities.
+
+## Intrinsic payoff
+
+The intrinsic payoff of a European option at expiry is the amount received on
+exercise, ignoring any premium paid. It is never negative:
+
+```
+Call:  max(S - K, 0)
+Put:   max(K - S, 0)
+```
+
+`S` (underlying price) must be a finite real number and must be `>= 0`; a zero
+underlying price is valid (it yields a zero call payoff and a `K` put payoff).
+`K` (strike) must be finite and strictly positive. `intrinsic_payoff` does not
+price the option and does not depend on `r`, `q`, `sigma`, or `T`.
+
+## Long-option expiry profit and loss
+
+The expiry profit and loss of a **long** option is the intrinsic payoff minus
+the premium paid for one option unit:
+
+```
+expiry_profit_loss = intrinsic_payoff(...) - premium
+```
+
+Conventions:
+
+- `premium` is the amount paid to acquire one option unit. It must be a finite
+  real number and must be `>= 0`.
+- No discounting is applied inside this function; the premium is compared
+  directly to the intrinsic payoff at expiry.
+- No contract multiplier or position quantity is assumed; the result is per
+  single option unit.
+- Short positions are never inferred and the premium sign is never silently
+  changed. For a long option, the minimum profit and loss is `-premium`.
+- The break-even underlying price is `K + premium` for a call and `K - premium`
+  for a put.
+
+## Scenario analysis
+
+`evaluate_price_scenarios` reprices a European option under pre-expiry scenario
+assumptions. The strike is taken from the base case and remains fixed across
+scenarios; only spot, time to expiry, volatility, risk-free rate, and dividend
+yield vary per scenario. Each scenario price is produced by `price_european`, so
+the pricing core remains the single source of truth.
+
+### Scenario fields
+
+- `spot` (`S`) must be strictly positive.
+- `time_to_expiry` (`T`) must be non-negative; `T = 0` places the option at
+  expiry.
+- `volatility` (`sigma`) must be non-negative; `sigma = 0` selects the
+  deterministic discounted-payoff path.
+- `risk_free_rate` (`r`) must be finite and may be negative.
+- `dividend_yield` (`q`) must be finite and may be negative; it defaults to `0`.
+- `label` is an optional `str` (or `None`); an empty string is permitted and is
+  treated as a present-but-empty label.
+
+### Absolute and percentage change
+
+For each scenario, with the base option price `P0` and the scenario option price
+`P1`:
+
+```
+price_change     = P1 - P0
+percentage_change = price_change / P0
+```
+
+`percentage_change` is a **decimal** return (for example `0.1` means a 10%
+increase); users may multiply by 100 for percentage points. It is **not**
+multiplied by 100 internally and is not clamped.
+
+When the base price `P0` is exactly `0.0`, `percentage_change` is `None`. The
+implementation does not return `inf`, does not substitute `0`, and does not use
+an epsilon denominator.
+
+### Order and duplicate preservation
+
+`evaluate_price_scenarios` preserves the order of the supplied scenarios and
+preserves duplicate scenarios exactly. The input iterable is consumed once; no
+implicit grid or de-duplication is performed, and the result is an immutable
+tuple. `evaluate_expiry_scenarios` follows the same policy for underlying prices.
+
+### Boundary behaviour inherited from price_european
+
+Because scenarios are repriced with `price_european`, all boundary behaviour is
+inherited unchanged: at `T = 0` the price equals the intrinsic payoff, and at
+`sigma = 0` (with `T > 0`) the exact deterministic discounted payoff is used.
+The scenario module does not reimplement or override these rules.
 
 ## Invalid-input handling
 
