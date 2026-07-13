@@ -28,11 +28,12 @@ src/blackscholeslab/
     validation.py     # Reusable numeric and option-type validation
     numerical.py      # Internal numerical helpers (standard normal CDF)
     pricing.py        # European Black-Scholes-Merton pricing
+    greeks.py         # Analytical Greeks and OptionGreeks result model
 ```
 
 The exact module layout may be refined during later stages, but the current
-separation of concerns (model, validation, numerics, pricing) is intentional
-and is preserved as the core grows.
+separation of concerns (model, validation, numerics, pricing, Greeks) is
+intentional and is preserved as the core grows.
 
 ## Modules
 
@@ -66,8 +67,8 @@ reused both at model construction and wherever option types are accepted.
 
 `numerical.py` holds internal, pure helpers such as `norm_cdf`, the standard
 normal cumulative distribution function implemented with `math.erf`. These
-helpers are intentionally private (not exported from the package root) so future
-modules can reuse them without exposing implementation details.
+helpers are intentionally private (not exported from the package root) so other
+core modules can reuse them without exposing implementation details.
 
 ### Pricing (`pricing.py`)
 
@@ -77,16 +78,30 @@ continuous dividend yield. It handles expiry and zero-volatility cases
 explicitly. It depends on `models`, `validation`, and `numerical`, but on
 nothing related to interfaces, CLI, or web layers.
 
+### Greeks (`greeks.py`)
+
+`greeks.py` implements `greeks_european(inputs, option_type) -> OptionGreeks`,
+the analytical Black-Scholes-Merton Greeks (delta, gamma, vega, annual theta,
+rho, dividend rho) for European call and put options with continuous dividend
+yield. It defines the immutable `OptionGreeks` result model (a frozen
+dataclass) and a private standard-normal PDF helper `_norm_pdf`. It reuses the
+existing `BlackScholesInputs` model, `validate_option_type` validation, the
+`norm_cdf` numerical helper, and the same `d1`/`d2` conventions as `pricing.py`.
+Like `pricing.py`, it depends on `models`, `validation`, and `numerical`, but on
+nothing related to interfaces, CLI, or web layers. It does **not** depend on
+`pricing.py`; the Greeks are computed independently from the closed-form
+formulas rather than by differentiating `price_european`.
+
 ## Dependency direction
 
 The dependency graph is strictly layered and acyclic:
 
 ```
-cli / demo  ->  pricing  ->  models / validation / numerical
+cli / demo  ->  pricing / greeks  ->  models / validation / numerical
 ```
 
-- Future interfaces (CLI, demo) will depend on the core (`pricing`, `models`,
-  `validation`, `numerical`).
+- Future interfaces (CLI, demo) will depend on the core (`pricing`, `greeks`,
+  `models`, `validation`, `numerical`).
 - The core depends only on its sibling modules and the standard library.
 - The mathematical core must **not** depend on the CLI or any web/visualisation
   layer.
@@ -109,16 +124,18 @@ following are exported:
 - `BlackScholesInputs` — immutable input model.
 - `OptionType` — call/put enumeration.
 - `price_european` — European pricing entry point.
+- `OptionGreeks` — immutable Greek result model.
+- `greeks_european` — analytical Greek entry point for European options.
 - `__version__`, `__author__`, `__license__` — package metadata.
 
-Internal helpers (`validate_inputs`, `validate_real_number`, `norm_cdf`, and
-similar) remain private and are not part of the public API.
+Internal helpers (`validate_inputs`, `validate_real_number`, `norm_cdf`,
+`_norm_pdf`, and similar) remain private and are not part of the public API. The
+`greeks_european` function reuses `validate_option_type` from `validation` and
+`norm_cdf` from `numerical`; the new `_norm_pdf` helper is private to
+`greeks.py`.
 
 ## Future module connections
 
-- **Greeks** (`core`/greeks-style module, future): will depend on `models`,
-  `validation`, and `numerical`, and will add sensitivity calculations alongside
-  `price_european`.
 - **Implied volatility** (future): will reuse `models`, `validation`,
   `numerical`, and `price_european` as the pricing oracle for root-finding.
 - **Scenario/payoff analysis** (future): will reuse `models` and `pricing`.
@@ -154,6 +171,7 @@ values or silently clamp inputs.
 
 ## Status
 
-The European pricing core (`models`, `validation`, `numerical`, `pricing`) is
-implemented and tested. See [ROADMAP.md](../ROADMAP.md) for the staged plan and
-the remaining planned capabilities.
+The European pricing core (`models`, `validation`, `numerical`, `pricing`) and
+the analytical Greeks (`greeks.py`) are implemented and tested. See
+[ROADMAP.md](../ROADMAP.md) for the staged plan and the remaining planned
+capabilities.

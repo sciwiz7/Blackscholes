@@ -4,11 +4,11 @@ A transparent and carefully tested Python toolkit for European option pricing,
 analytical Greeks, implied-volatility calculation, and scenario analysis based
 on the Black-Scholes framework.
 
-> **Status: early development.** The European call and put pricing core is
-> implemented in the current development version, but the project remains
-> **unreleased** and is **not yet available from PyPI**. Greeks, implied
-> volatility, and scenario analysis are not implemented. Do not rely on this
-> project for calculations until a stable release is published.
+> **Status: early development.** The European call and put pricing core and
+> the analytical Greeks are implemented in the current development version, but
+> the project remains **unreleased** and is **not yet available from PyPI**.
+> Implied volatility, and scenario analysis are not implemented. Do not rely on
+> this project for calculations until a stable release is published.
 
 ## Purpose
 
@@ -22,6 +22,8 @@ The following are implemented in the current development version:
 
 - European call and put option pricing under Black-Scholes-Merton.
 - Continuous dividend-yield support.
+- Analytical Greeks for European options: delta, gamma, vega, annual theta,
+  rho, and dividend rho.
 - Explicit input validation.
 - Deterministic, fully tested reference and invariant tests.
 
@@ -29,7 +31,6 @@ The following are implemented in the current development version:
 
 The following capabilities are planned and will be added in later stages:
 
-- Analytical Greeks (delta, gamma, vega, theta, rho)
 - Implied-volatility calculation
 - Payoff analysis
 - Scenario analysis
@@ -101,9 +102,45 @@ put_price = price_european(inputs, OptionType.PUT)
 ```
 
 This computes the Black-Scholes-Merton European call and put prices for a
-non-dividend-paying underlying. See
+non-dividend-paying underlying.
+
+Greeks example:
+
+```python
+from blackscholeslab import (
+    BlackScholesInputs,
+    OptionType,
+    greeks_european,
+)
+
+inputs = BlackScholesInputs(
+    spot=100.0,
+    strike=100.0,
+    time_to_expiry=1.0,
+    risk_free_rate=0.05,
+    volatility=0.30,
+    dividend_yield=0.02,
+)
+
+call_greeks = greeks_european(inputs, OptionType.CALL)
+put_greeks = greeks_european(inputs, OptionType.PUT)
+```
+
+This computes the analytical Greeks for call and put options using the
+Black-Scholes-Merton model with continuous dividend yield. See
 [Mathematical conventions](docs/mathematical-conventions.md) for the formulas,
 units, and validation rules.
+
+The Greeks use raw decimal units, not percentage points:
+
+- `vega` is the price change per a **1.0** absolute change in volatility, so the
+  change per one volatility percentage point is `vega / 100`.
+- `rho` is the price change per a **1.0** absolute change in the risk-free rate,
+  so the change per one interest-rate percentage point is `rho / 100`.
+- `dividend_rho` is the price change per a **1.0** absolute change in dividend
+  yield, so the change per one yield percentage point is `dividend_rho / 100`.
+- `theta` is the price change per **one year** of calendar time passing. The
+  library does not silently divide by 100 or 365.
 
 ## Quality commands
 

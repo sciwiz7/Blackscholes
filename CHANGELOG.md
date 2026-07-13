@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project metadata and packaging configuration in `pyproject.toml`.
 - Development tooling: Ruff, mypy, pytest, and pytest-cov.
 - Continuous integration workflow running on Python 3.11 and 3.12.
-- Documentation: architecture, mathematical conventions, and development guides.
+- Documentation: architecture, mathematical conventions, and development guide.
 - Community documents: README, LICENSE (MIT), CONTRIBUTING, CODE_OF_CONDUCT,
   SECURITY, GOVERNANCE, and ROADMAP.
 - Issue and pull-request templates.
@@ -30,13 +30,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   values, non-finite numbers, and out-of-domain values.
 - Reference tests against independently derived Black-Scholes-Merton values.
 - Put-call parity and invariant tests.
+- Analytical Greeks for European options:
+  - OptionGreeks result model with delta, gamma, vega, theta, rho, dividend_rho.
+  - Delta, gamma, vega, annual theta, rho, dividend rho implementations.
+  - Call and put Greeks with identical gamma and vega, distinct delta, theta, rho, and dividend rho.
+  - Support for dividend-paying and zero-dividend options.
+  - Support for finite negative risk-free rates and dividend yields.
+  - Finite-difference verification against analytical results.
+  - Validation to reject zero time to expiry and zero volatility.
+  - Immutable OptionGreeks result type.
+  - Top-level public API exports.
 
 ### Not yet implemented
 
 The following planned capabilities are **not** part of this release and have
 no implemented code:
 
-- Analytical Greeks
 - Implied-volatility calculation
 - Payoff and scenario analysis
 - Command-line interface
