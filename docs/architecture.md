@@ -29,6 +29,7 @@ src/blackscholeslab/
     numerical.py      # Internal numerical helpers (standard normal CDF)
     pricing.py        # European Black-Scholes-Merton pricing
     greeks.py         # Analytical Greeks and OptionGreeks result model
+    implied_volatility.py  # Implied-volatility solver and market-input model
 ```
 
 The exact module layout may be refined during later stages, but the current
@@ -92,12 +93,39 @@ nothing related to interfaces, CLI, or web layers. It does **not** depend on
 `pricing.py`; the Greeks are computed independently from the closed-form
 formulas rather than by differentiating `price_european`.
 
+### Implied volatility (`implied_volatility.py`)
+
+`implied_volatility.py` implements `implied_volatility(inputs, option_type, ...) ->
+float`, a transparent, deterministic solver for the annualised implied volatility
+of European call and put options. It also defines the immutable
+`ImpliedVolatilityInputs` market-input model (a frozen dataclass).
+
+The solver:
+
+- validates the observed `market_price` against the European no-arbitrage bounds
+  (a zero-volatility lower bound and an upper bound approached only as volatility
+  tends to infinity);
+- returns exactly `0.0` when the market price equals the zero-volatility lower
+  bound;
+- raises `ValueError` when the market price is below the lower bound or at/above
+  the upper bound;
+- adaptively brackets the volatility, doubling the upper bound up to a configured
+  maximum when the default bracket is insufficient;
+- performs deterministic bisection with explicit price and volatility tolerances
+  and a maximum iteration count, raising `RuntimeError` on non-convergence.
+
+`implied_volatility.py` depends on `models`, `validation`, `numerical`, and
+`pricing`. Crucially, it does **not** reimplement the Black-Scholes formula: it
+constructs a `BlackScholesInputs` for each candidate volatility and calls
+`price_european`. The pricing core remains the single source of truth. There is
+no dependency from `pricing.py` (or `greeks.py`) back to the solver.
+
 ## Dependency direction
 
 The dependency graph is strictly layered and acyclic:
 
 ```
-cli / demo  ->  pricing / greeks  ->  models / validation / numerical
+cli / demo  ->  pricing / greeks / implied_volatility  ->  models / validation / numerical
 ```
 
 - Future interfaces (CLI, demo) will depend on the core (`pricing`, `greeks`,
@@ -126,19 +154,27 @@ following are exported:
 - `price_european` — European pricing entry point.
 - `OptionGreeks` — immutable Greek result model.
 - `greeks_european` — analytical Greek entry point for European options.
+- `ImpliedVolatilityInputs` — immutable market-input model for implied
+  volatility.
+- `implied_volatility` — deterministic implied-volatility solver for European
+  options.
 - `__version__`, `__author__`, `__license__` — package metadata.
 
 Internal helpers (`validate_inputs`, `validate_real_number`, `norm_cdf`,
-`_norm_pdf`, and similar) remain private and are not part of the public API. The
-`greeks_european` function reuses `validate_option_type` from `validation` and
-`norm_cdf` from `numerical`; the new `_norm_pdf` helper is private to
-`greeks.py`.
+`_norm_pdf`, `_price_at_volatility`, `_no_arbitrage_bounds`,
+`_validate_solver_controls`, and similar) remain private and are not part of the
+public API. The `greeks_european` function reuses `validate_option_type` from
+`validation` and `norm_cdf` from `numerical`; the new `_norm_pdf` helper is
+private to `greeks.py`. The solver reuses `price_european` from `pricing` as its
+pricing oracle and reuses `validate_real_number` and `validate_option_type` from
+`validation`.
 
 ## Future module connections
 
-- **Implied volatility** (future): will reuse `models`, `validation`,
+- **Implied volatility** (implemented): reuses `models`, `validation`,
   `numerical`, and `price_european` as the pricing oracle for root-finding.
-- **Scenario/payoff analysis** (future): will reuse `models` and `pricing`.
+- **Scenario/payoff analysis** (future): will reuse `models`, `pricing`, and may
+  reuse `price_european` and `implied_volatility`.
 - **CLI** and **demonstration** (future, optional): will depend on the core but
   never the reverse, and will not be imported by the core.
 

@@ -5,11 +5,14 @@ The development version implements the European option pricing core:
 - :class:`BlackScholesInputs` — immutable, typed pricing inputs.
 - :class:`OptionType` — call/put enumeration.
 - :func:`price_european` — analytical European call and put pricing.
+- :class:`ImpliedVolatilityInputs` — immutable, typed market inputs.
+- :func:`implied_volatility` — deterministic implied-volatility solver.
 """
 
 from __future__ import annotations
 
 from blackscholeslab.greeks import OptionGreeks, greeks_european
+from blackscholeslab.implied_volatility import ImpliedVolatilityInputs, implied_volatility
 from blackscholeslab.models import BlackScholesInputs, OptionType
 from blackscholeslab.pricing import price_european
 
@@ -23,6 +26,8 @@ __all__ = [
     "price_european",
     "OptionGreeks",
     "greeks_european",
+    "ImpliedVolatilityInputs",
+    "implied_volatility",
     "__version__",
     "__author__",
     "__license__",

@@ -45,10 +45,16 @@ state from future intent.
 
 ## Stage 4 — Implied volatility
 
-**Status: Planned**
+**Status: Completed**
 
-- Deterministic root-finding against observed prices.
-- Bounded, well-tested solver behaviour.
+- `ImpliedVolatilityInputs` immutable, typed market-input model.
+- `implied_volatility` deterministic solver for European call and put options.
+- European no-arbitrage lower- and upper-bound validation of the market price.
+- Exact zero-volatility lower-bound handling and explicit upper-bound rejection.
+- Adaptive volatility bracketing with a configurable maximum.
+- Deterministic bisection with explicit price and volatility tolerances and a
+  maximum iteration count.
+- Reference, round-trip, boundary, bracketing, and put-call parity tests.
 
 ## Stage 5 — Payoff and scenario analysis
 

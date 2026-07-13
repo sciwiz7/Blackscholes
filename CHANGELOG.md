@@ -40,13 +40,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Validation to reject zero time to expiry and zero volatility.
   - Immutable OptionGreeks result type.
   - Top-level public API exports.
+- Implied-volatility solver for European options:
+  - `ImpliedVolatilityInputs` immutable, typed market-input model.
+  - `implied_volatility` deterministic solver for European call and put options.
+  - European no-arbitrage lower- and upper-bound validation of the market price.
+  - Exact zero-volatility lower-bound handling (returns exactly `0.0`).
+  - Explicit upper-bound rejection (no finite implied volatility exists).
+  - Adaptive volatility bracketing with a configurable maximum.
+  - Deterministic bisection with explicit price and volatility tolerances and a
+    maximum iteration count.
+  - Support for continuous dividend yields, finite negative rates, and finite
+    negative dividend yields.
+  - Reuse of `price_european` as the single pricing oracle (no reimplemented
+    formula).
+  - Round-trip tests against independently derived reference values, a
+    deterministic matrix across strikes, expiries, yields, and rates, boundary
+    tests, bracketing and maximum-volatility tests, and put-call parity and
+    repricing-consistency tests.
+  - Configurable tolerances and iteration limits with clear error policies.
 
 ### Not yet implemented
 
 The following planned capabilities are **not** part of this release and have
 no implemented code:
 
-- Implied-volatility calculation
 - Payoff and scenario analysis
 - Command-line interface
 - Interactive demonstration

@@ -4,11 +4,11 @@ A transparent and carefully tested Python toolkit for European option pricing,
 analytical Greeks, implied-volatility calculation, and scenario analysis based
 on the Black-Scholes framework.
 
-> **Status: early development.** The European call and put pricing core and
-> the analytical Greeks are implemented in the current development version, but
-> the project remains **unreleased** and is **not yet available from PyPI**.
-> Implied volatility, and scenario analysis are not implemented. Do not rely on
-> this project for calculations until a stable release is published.
+> **Status: early development.** The European call and put pricing core, the
+> analytical Greeks, and implied-volatility solving are implemented in the
+> current development version, but the project remains **unreleased** and is
+> **not yet available from PyPI**. Scenario analysis is not implemented. Do not
+> rely on this project for calculations until a stable release is published.
 
 ## Purpose
 
@@ -24,6 +24,8 @@ The following are implemented in the current development version:
 - Continuous dividend-yield support.
 - Analytical Greeks for European options: delta, gamma, vega, annual theta,
   rho, and dividend rho.
+- Implied-volatility solving for European call and put options with continuous
+  dividend yield, finite negative rates, and finite negative dividend yields.
 - Explicit input validation.
 - Deterministic, fully tested reference and invariant tests.
 
@@ -31,7 +33,6 @@ The following are implemented in the current development version:
 
 The following capabilities are planned and will be added in later stages:
 
-- Implied-volatility calculation
 - Payoff analysis
 - Scenario analysis
 - Educational visualisations
@@ -128,6 +129,36 @@ put_greeks = greeks_european(inputs, OptionType.PUT)
 
 This computes the analytical Greeks for call and put options using the
 Black-Scholes-Merton model with continuous dividend yield. See
+[Mathematical conventions](docs/mathematical-conventions.md) for the formulas,
+units, and validation rules.
+
+Implied-volatility example:
+
+```python
+from blackscholeslab import (
+    ImpliedVolatilityInputs,
+    OptionType,
+    implied_volatility,
+)
+
+inputs = ImpliedVolatilityInputs(
+    market_price=10.450583572185565,
+    spot=100.0,
+    strike=100.0,
+    time_to_expiry=1.0,
+    risk_free_rate=0.05,
+    dividend_yield=0.0,
+)
+
+vol = implied_volatility(inputs, OptionType.CALL)
+# vol is the annualised decimal implied volatility (here approximately 0.20).
+```
+
+The observed `market_price` must satisfy the European no-arbitrage bounds
+documented in [Mathematical conventions](docs/mathematical-conventions.md): it
+must be at least the zero-volatility lower bound and strictly below the
+upper bound approached only as volatility tends to infinity. The solver returns
+annualised decimal volatility (for example `0.20` for 20%). See
 [Mathematical conventions](docs/mathematical-conventions.md) for the formulas,
 units, and validation rules.
 
