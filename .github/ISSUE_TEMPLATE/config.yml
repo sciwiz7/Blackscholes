@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/sciwiz7/Blackscholes/security/advisories/new
+    about: Please report security vulnerabilities privately via GitHub Security Advisories.
+  - name: Question or discussion
+    url: https://github.com/sciwiz7/Blackscholes/discussions
+    about: Use discussions for questions about usage or design.
