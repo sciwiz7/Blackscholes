@@ -164,15 +164,86 @@ volatility and rate inputs should be internally adjusted for trading-day counts,
 and whether day-count conventions will be exposed. This remains a design
 decision for a later stage.
 
-## Greek units and signs (Unresolved)
+## Greek units and signs
 
-Greeks are not implemented in this stage. The intended definitions and
-**Unresolved** scaling questions are recorded for later work:
+The analytical Greeks are implemented and documented below. All Greeks are
+defined with specific units and signs as per the public API. The units are
+consistent with the pricing conventions:
 
-- **Vega scaling**: per 1.00 change in volatility versus per 1 percentage point.
-- **Theta scaling**: per year versus per calendar day.
-- **Rho scaling**: per 1.00 change in rate versus per 1 percentage point.
-- Sign conventions for Greeks are not yet implemented and remain unresolved.
+- **Delta**: price change per one-unit change in spot.
+- **Gamma**: delta change per one-unit change in spot.
+- **Vega**: price change per 1.0 absolute change in volatility.
+- **Theta**: price change per one year of calendar time passing (negative for long options).
+- **Rho**: price change per 1.0 absolute change in the risk-free rate.
+- **Dividend rho**: price change per 1.0 absolute change in dividend yield.
+
+Scaling notes:
+
+- **Vega per one volatility percentage point** = vega / 100.
+- **Rho per one interest-rate percentage point** = rho / 100.
+- **Dividend rho per one yield percentage point** = dividend_rho / 100.
+- No automatic division by 100 or 365 is performed. Users must scale manually
+  if they need these units.
+
+Sign conventions:
+
+- Call delta is positive for calls in-the-money; put delta is negative for puts
+  in-the-money.
+- Gamma and vega are positive for calls and puts.
+- Theta is negative for long options (time decay erodes option value).
+- Rho is positive for calls and negative for puts.
+- Dividend rho is negative for calls and positive for puts.
+
+## Greek formulas
+
+Let S = spot, K = strike, T = time_to_expiry, r = risk_free_rate,
+q = dividend_yield, sigma = volatility, N = standard normal CDF, phi = standard
+normal PDF.
+
+First compute:
+
+```
+d1 = [ ln(S / K) + (r - q + 0.5 * sigma²) * T ] / (sigma * sqrt(T))
+d2 = d1 - sigma * sqrt(T)
+```
+
+### Call Greeks
+
+- **Call delta:** exp(-q * T) * N(d1)
+- **Call gamma:** [exp(-q * T) * phi(d1)] / [S * sigma * sqrt(T)]
+- **Call vega:** S * exp(-q * T) * phi(d1) * sqrt(T)
+- **Call theta:**
+  ```
+  [-S * exp(-q * T) * phi(d1) * sigma] / [2 * sqrt(T)]
+  - r * K * exp(-r * T) * N(d2) + q * S * exp(-q * T) * N(d1)
+  ```
+- **Call rho:** K * T * exp(-r * T) * N(d2)
+- **Call dividend rho:** -S * T * exp(-q * T) * N(d1)
+
+### Put Greeks
+
+- **Put delta:** exp(-q * T) * [N(d1) - 1]
+- **Put gamma:** [exp(-q * T) * phi(d1)] / [S * sigma * sqrt(T)]
+- **Put vega:** S * exp(-q * T) * phi(d1) * sqrt(T)
+- **Put theta:**
+  ```
+  [-S * exp(-q * T) * phi(d1) * sigma] / [2 * sqrt(T)]
+  + r * K * exp(-r * T) * N(-d2) - q * S * exp(-q * T) * N(-d1)
+  ```
+- **Put rho:** -K * T * exp(-r * T) * N(-d2)
+- **Put dividend rho:** S * T * exp(-q * T) * N(-d1)
+
+## Domain restrictions
+
+Greeks require positive time to expiry and positive volatility because:
+
+- Delta may be discontinuous at expiry (T = 0).
+- Gamma may become singular or distributional at expiry.
+- Several formulas divide by volatility × sqrt(time).
+
+When `time_to_expiry == 0` or `volatility == 0`, the `greeks_european` function
+raises ValueError with a clear message. The library does not substitute arbitrary
+epsilons or return sentinel values at those boundaries.
 
 ## References
 

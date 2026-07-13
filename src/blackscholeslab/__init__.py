@@ -9,6 +9,7 @@ The development version implements the European option pricing core:
 
 from __future__ import annotations
 
+from blackscholeslab.greeks import OptionGreeks, greeks_european
 from blackscholeslab.models import BlackScholesInputs, OptionType
 from blackscholeslab.pricing import price_european
 
@@ -20,6 +21,8 @@ __all__ = [
     "BlackScholesInputs",
     "OptionType",
     "price_european",
+    "OptionGreeks",
+    "greeks_european",
     "__version__",
     "__author__",
     "__license__",
