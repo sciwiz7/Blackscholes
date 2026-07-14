@@ -1586,9 +1586,13 @@ def test_module_main_execution_runs_guard_and_exits() -> None:
     """Execute cli.py with __name__ == '__main__' and confirm the guard runs.
 
     This genuinely covers ``if __name__ == '__main__': raise SystemExit(main())``
-    in-process via runpy (so pytest-cov tracks it), without a coverage exclusion.
+    by running the module file directly as ``__main__`` via ``runpy.run_path``
+    (loader-independent, so it works under both regular and editable installs
+    and on all supported Python versions). pytest-cov tracks the executed lines;
+    no coverage exclusion is used.
     """
     import runpy
+    from pathlib import Path
 
     argv = [
         "blackscholeslab",
@@ -1609,7 +1613,7 @@ def test_module_main_execution_runs_guard_and_exits() -> None:
     ]
     with mock.patch.object(sys, "argv", argv):
         with pytest.raises(SystemExit) as exc:
-            runpy.run_module("blackscholeslab.cli", run_name="__main__")
+            runpy.run_path(str(Path(cli.__file__).resolve()), run_name="__main__")
     # A valid command returns 0, surfaced through the guard as SystemExit(0).
     assert exc.value.code == 0
 
@@ -1617,10 +1621,11 @@ def test_module_main_execution_runs_guard_and_exits() -> None:
 def test_module_main_execution_no_args_exits_2() -> None:
     """Running the module as __main__ with no args hits argparse (exit 2)."""
     import runpy
+    from pathlib import Path
 
     with mock.patch.object(sys, "argv", ["blackscholeslab"]):
         with pytest.raises(SystemExit) as exc:
-            runpy.run_module("blackscholeslab.cli", run_name="__main__")
+            runpy.run_path(str(Path(cli.__file__).resolve()), run_name="__main__")
     assert exc.value.code == 2
 
 
