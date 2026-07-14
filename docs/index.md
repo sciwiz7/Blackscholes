@@ -69,7 +69,8 @@ A Python **3.11 or newer** environment is required (`requires-python = ">=3.11"`
 - [Development](development.md) — environment setup, testing, linting, type
   checking, building, and documentation validation.
 - [Contributing](../CONTRIBUTING.md) — contribution expectations.
-- [Roadmap](../ROADMAP.md) — staged plan (Stage 8 = documentation and tutorials).
+- [Releasing](releasing.md) — release process and version management.
+- [Roadmap](../ROADMAP.md) — staged plan (Stage 9 = release-readiness infrastructure).
 
 ## Educational / non-advice warning
 

@@ -189,6 +189,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - A concise `README.md` entry point linking to the documentation index and
         tutorials rather than duplicating them.
 
+- Release documentation (`docs/releasing.md`) explaining version formats,
+  clean-checkout release preparation, changelog finalization, version
+  synchronization, release-candidate validation, artifact building and
+  inspection, TestPyPI rehearsal, production publication, Git tag and GitHub
+  release procedure, post-publication verification, failure/rollback/yank
+  guidance, and educational limitation.
+- Operational release checklist (`RELEASE_CHECKLIST.md`) with checkbox-based
+  steps for pre-release preparation, release-candidate verification, explicit
+  human approval, version bump, tag creation, artifact publication, GitHub
+  release, post-release checks, and rollback/yank response.
+- Secure GitHub Actions release workflow (`.github/workflows/release.yml`)
+  using OIDC Trusted Publishing, build-once artifact validation, pinned action
+  SHAs, protected environments, and separate TestPyPI/production publication
+  paths.
+- Version-consistency and artifact-validation tests (`tests/test_release.py`)
+  verifying pyproject.toml, `__version__`, wheel metadata, sdist metadata,
+  artifact contents, `py.typed`, forbidden-file exclusion, Streamlit
+  non-dependency, and SHA-256 hash computation.
+- Updated Stage 9 roadmap with a staged plan for the first public 0.1.0
+  release: release-readiness preparation, candidate, TestPyPI rehearsal,
+  explicit approval, production publication, and compatibility history before
+  1.0.0.
+
 ### Not yet implemented
 
 The following planned capabilities are **not** yet part of this release and

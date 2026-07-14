@@ -35,12 +35,14 @@ EXAMPLES_DIR = REPO_ROOT / "examples"
 DOC_FILES = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "CHANGELOG.md",
+    REPO_ROOT / "RELEASE_CHECKLIST.md",
     REPO_ROOT / "examples" / "README.md",
     DOCS_DIR / "index.md",
     DOCS_DIR / "api-reference.md",
     DOCS_DIR / "architecture.md",
     DOCS_DIR / "development.md",
     DOCS_DIR / "mathematical-conventions.md",
+    DOCS_DIR / "releasing.md",
     *sorted(TUTORIALS_DIR.glob("*.md")),
 ]
 
