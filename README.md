@@ -5,10 +5,10 @@ analytical Greeks, implied-volatility calculation, and scenario analysis based
 on the Black-Scholes framework.
 
 > **Status: early development.** The European call and put pricing core, the
-> analytical Greeks, implied-volatility solving, and payoff and scenario analysis
-> are implemented in the current development version, but the project remains
-> **unreleased** and is **not yet available from PyPI**. Do not rely on this
-> project for calculations until a stable release is published.
+> analytical Greeks, implied-volatility solving, payoff and scenario analysis,
+> and a command-line interface are implemented in the current development version,
+> but the project remains **unreleased** and is **not yet available from PyPI**.
+> Do not rely on this project for calculations until a stable release is published.
 
 ## Purpose
 
@@ -35,13 +35,16 @@ The following are implemented in the current development version:
   - Immutable pre-expiry scenario definitions (`OptionScenario`).
   - Pre-expiry option repricing under scenario assumptions
     (`evaluate_price_scenarios`).
+- A command-line interface (`blackscholeslab`) exposing pricing, Greeks,
+  implied volatility, payoff, expiry profit/loss, and scenario analysis with
+  human-readable and deterministic JSON output. The CLI is implemented in the
+  development version but is not yet published on a package index.
 
 ## Planned capabilities
 
 The following capabilities are planned and will be added in later stages:
 
 - Educational visualisations
-- Command-line usage
 - An optional interactive demonstration
 
 These are not available yet.
@@ -240,6 +243,120 @@ The Greeks use raw decimal units, not percentage points:
   yield, so the change per one yield percentage point is `dividend_rho / 100`.
 - `theta` is the price change per **one year** of calendar time passing. The
   library does not silently divide by 100 or 365.
+
+## Command-line interface
+
+A command-line interface named `blackscholeslab` is implemented in the
+development version. It is **not** available from PyPI; install the development
+source as described in [Local development setup](#local-development-setup) to use
+it. The CLI is a thin layer over the core: it parses arguments, builds the
+existing typed input models, calls the existing public functions, and formats
+output. It never reimplements pricing, Greek, implied-volatility, payoff, or
+scenario calculations.
+
+Run the top-level help to see all subcommands:
+
+```bash
+blackscholeslab --help
+```
+
+Each subcommand also supports `--help`, for example:
+
+```bash
+blackscholeslab price --help
+```
+
+### Decimal rates and volatility
+
+All rate and volatility inputs are **annualised decimals**, not percentages:
+
+- `0.05` means a 5% continuously compounded risk-free rate.
+- `0.20` means 20% annualised volatility.
+- `0.02` means a 2% continuous dividend yield.
+
+The CLI does not interpret percentage strings and does not scale inputs.
+
+### JSON output
+
+Every calculation command accepts a `--json` flag. Without `--json`, the command
+prints stable human-readable text to stdout. With `--json`, it prints exactly one
+JSON object to stdout with deterministic key ordering (`sort_keys=True`) and
+without `NaN` or `Infinity` (`allow_nan=False`). Errors and usage messages are
+always written to stderr, never stdout.
+
+### Exit codes
+
+- `0` — success.
+- `2` — expected input error (`TypeError`/`ValueError`), including missing or
+  malformed arguments detected by `argparse`, an invalid option type, or a
+  domain error from the core (for example a market price outside the
+  no-arbitrage bounds, or zero time/volatility for the Greeks).
+- `3` — the implied-volatility solver failed to converge within the configured
+  iteration limit (`RuntimeError`).
+
+### Examples
+
+Price a European call:
+
+```bash
+blackscholeslab price \
+  --type call \
+  --spot 100 --strike 100 --time 1 --rate 0.05 --volatility 0.20 --dividend-yield 0.02
+```
+
+Compute the Greeks:
+
+```bash
+blackscholeslab greeks \
+  --type call \
+  --spot 100 --strike 100 --time 1 --rate 0.05 --volatility 0.30 --dividend-yield 0.02
+```
+
+Recover implied volatility from a market price (JSON):
+
+```bash
+blackscholeslab implied-volatility \
+  --type call \
+  --market-price 10.450583572185565 \
+  --spot 100 --strike 100 --time 1 --rate 0.05 --dividend-yield 0
+```
+
+Intrinsic expiry payoff:
+
+```bash
+blackscholeslab payoff --type call --underlying-price 120 --strike 100
+```
+
+Expiry profit and loss for a long option after the paid premium:
+
+```bash
+blackscholeslab expiry-pnl --type call --underlying-price 120 --strike 100 --premium 7
+```
+
+Expiry scenarios (human-readable table):
+
+```bash
+blackscholeslab expiry-scenarios \
+  --type call --strike 100 --premium 7 \
+  --underlying-prices 80 100 107 120
+```
+
+Pre-expiry price scenarios (repeatable `--scenario` encoded as
+`spot,time,volatility,rate,dividend_yield[,label]`):
+
+```bash
+blackscholeslab price-scenarios \
+  --type call \
+  --spot 100 --strike 100 --time 1 --rate 0.05 --volatility 0.20 --dividend-yield 0.02 \
+  --scenario "110,1,0.20,0.05,0.02,spot-up" \
+  --scenario "90,0.5,0.30,0.03,0.01,stress"
+```
+
+The `price-scenarios` `percentage_change` is a **decimal** return (for example
+`0.1` means a 10% increase); it is not multiplied by 100. When the base option
+price is exactly `0.0`, `percentage_change` is reported as `undefined` in the
+human view and `null` in JSON. Scenario order and duplicates are preserved, and
+the strike is always taken from the base case.
 
 ## Quality commands
 

@@ -81,13 +81,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Reference and invariant tests covering payoff monotonicity, break-even
       behaviour, order/duplicate preservation, scenario monotonicity, base-price
       consistency, and zero-base-price percentage handling.
+    - Command-line interface for selected core functionality:
+      - `blackscholeslab` console script entry point
+        (`blackscholeslab.cli:main`) registered in `pyproject.toml`.
+      - Seven CLI subcommands: `price`, `greeks`, `implied-volatility`, `payoff`,
+        `expiry-pnl`, `expiry-scenarios`, and `price-scenarios`.
+      - Human-readable text output and deterministic JSON output (`--json`) using
+        `json.dumps(..., sort_keys=True, allow_nan=False)`.
+      - Stable exit-code policy: `0` on success, `2` for expected `TypeError`/
+        `ValueError` input errors, and `3` for `RuntimeError` from the implied
+        volatility solver on non-convergence.
+      - Scenario-order and duplicate preservation in `expiry-scenarios` and
+        `price-scenarios`.
+      - No-runtime-dependency design; the CLI uses only the standard library
+        (`argparse`, `json`, `sys`) plus the existing public core API.
+      - CLI tests and clean-install command smoke tests (wheel and sdist).
 
 ### Not yet implemented
 
-The following planned capabilities are **not** part of this release and have
-no implemented code:
+The following planned capabilities are **not** yet part of this release and
+have no implemented code:
 
-- Command-line interface
 - Interactive demonstration
 
 ## [0.1.0-dev0]

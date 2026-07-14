@@ -25,6 +25,7 @@ architecture is designed so that:
 src/blackscholeslab/
     __init__.py       # Package metadata and public exports
     py.typed          # PEP 561 marker
+    cli.py            # Command-line interface (console script + python -m)
     models.py         # OptionType enum and BlackScholesInputs model
     validation.py     # Reusable numeric and option-type validation
     numerical.py      # Internal numerical helpers (standard normal CDF)
@@ -166,6 +167,51 @@ does **not** reimplement the Black-Scholes formula: each scenario price is
 produced by `price_european`. The pricing core remains the single source of
 truth, and `pricing.py` does not depend on `scenarios.py`.
 
+### Command-line interface (`cli.py`)
+
+`cli.py` is a thin, deterministic command-line interface over the existing core
+analytics. It is exposed as the `blackscholeslab` console script
+(`blackscholeslab.cli:main` in `pyproject.toml`) and is also runnable with
+`python -m blackscholeslab.cli`. It depends only on the standard library
+(`argparse`, `json`, `sys`) and on the public core API; it never reimplements
+pricing, Greek, implied-volatility, payoff, or scenario calculations.
+
+The CLI provides seven subcommands:
+
+- `price` — price a European option via `price_european`.
+- `greeks` — compute analytical Greeks via `greeks_european`.
+- `implied-volatility` — solve for implied volatility via `implied_volatility`.
+- `payoff` — intrinsic expiry payoff via `intrinsic_payoff`.
+- `expiry-pnl` — expiry profit and loss via `expiry_profit_loss`.
+- `expiry-scenarios` — ordered expiry payoff/P&L via `evaluate_expiry_scenarios`.
+- `price-scenarios` — pre-expiry repricing via `evaluate_price_scenarios`.
+
+Design properties:
+
+- **Command dispatch**: `build_parser` constructs an `argparse` parser with one
+  subparser per command. Each subparser records its handler via
+  `set_defaults(handler=...)`; `main` parses once and dispatches to the handler.
+- **Option-type parsing**: only lowercase `call` and `put` are accepted through
+  `argparse` `choices`; `main` maps them to `OptionType.CALL`/`OptionType.PUT`.
+- **Output formatting**: without `--json`, each command prints stable
+  human-readable text (floats via a `.12g` helper). With `--json`, each command
+  emits exactly one JSON object via `json.dumps(payload, sort_keys=True,
+  allow_nan=False)`. Human text goes to stdout; errors and usage go to stderr.
+- **Exit-code policy**: `main` returns `0` on success; `TypeError`/`ValueError`
+  are mapped to exit code `2` (expected input errors); `RuntimeError` from the
+  implied-volatility solver on non-convergence is mapped to exit code `3`.
+  `argparse` parsing failures preserve their standard exit code `2`.
+- **No financial math**: the CLI translates arguments into the existing typed
+  input models (`BlackScholesInputs`, `ImpliedVolatilityInputs`,
+  `OptionScenario`) and invokes the existing public functions. There are no
+  hidden defaults that differ from the Python API.
+- **JSON contract**: every JSON object uses deterministic key ordering and
+  contains only JSON-compatible values; `NaN`/`Infinity` are never emitted.
+
+The CLI is intentionally not exported from `blackscholeslab.__init__`; importing
+the core package must not import the CLI, and the core modules must never import
+`cli`.
+
 ## Dependency direction
 
 The dependency graph is strictly layered and acyclic:
@@ -233,8 +279,11 @@ its own fields on construction.
   not price options and does not depend on `pricing`.
 - **Scenario analysis** (implemented): reuses `models`, `validation`, and
   `pricing`, using `price_european` as its pricing oracle.
-- **CLI** and **demonstration** (future, optional): will depend on the core but
-  never the reverse, and will not be imported by the core.
+- **CLI** (implemented): `cli.py` depends on the core (pricing, greeks,
+  implied-volatility, payoff, scenarios, models, validation) and on the standard
+  library, but never the reverse; the core does not import the CLI.
+- **Demonstration** (future, optional): will depend on the core but never the
+  reverse, and will not be imported by the core.
 
 ## Numerical testing strategy
 

@@ -79,9 +79,20 @@ plotting dependencies.
 
 ## Stage 6 — Command-line interface
 
-**Status: Planned**
+**Status: Completed**
 
-- A thin CLI exposing selected core functionality.
+- A thin CLI exposing selected core functionality via the `blackscholeslab`
+  console script and `python -m blackscholeslab.cli`.
+- Seven subcommands: `price`, `greeks`, `implied-volatility`, `payoff`,
+  `expiry-pnl`, `expiry-scenarios`, and `price-scenarios`.
+- Standard-library-only implementation (`argparse`, `json`, `sys`); no new
+  runtime dependencies.
+- Human-readable text output and deterministic JSON output (`--json`) with
+  `sort_keys=True` and `allow_nan=False`.
+- Stable exit-code policy: `0` on success, `2` for expected `TypeError`/
+  `ValueError` input errors, and `3` for `RuntimeError` from the implied
+  volatility solver on non-convergence.
+- Scenario-order and duplicate preservation; no reimplemented financial math.
 - Strictly dependent on the core, never the reverse.
 
 ## Stage 7 — Interactive demonstration
