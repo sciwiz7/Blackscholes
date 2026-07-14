@@ -94,5 +94,10 @@ testpaths = ["tests"]
 addopts = "-ra --cov=blackscholeslab --cov=demo --cov-branch --cov-report=term-missing --cov-report=xml"
 
 [[tool.mypy.overrides]]
-module = ["streamlit", "streamlit.*"]
+module = [
+    "streamlit",
+    "streamlit.*",
+    "numpy",
+    "numpy.*",
+]
 follow_imports = "skip"
