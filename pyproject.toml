@@ -87,6 +87,7 @@ ignore = ["B008"]
 python_version = "3.11"
 strict = true
 warn_unused_configs = true
+follow_imports_for_stubs = true
 files = ["src", "demo", "tests"]
 
 [tool.pytest.ini_options]
