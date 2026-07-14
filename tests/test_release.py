@@ -310,8 +310,9 @@ def test_workflow_dispatch_has_no_production_pypi_mode() -> None:
     # Limit to the inputs/mode section before the next top-level key.
     tail = dispatch_block.split("\npermissions:", 1)[0]
     # Match a standalone option line only (e.g. "  - pypi"), not "testpypi"/"TestPyPI".
-    assert not re.search(r"^\s*-\s*pypi\s*$", tail, re.MULTILINE), \
+    assert not re.search(r"^\s*-\s*pypi\s*$", tail, re.MULTILINE), (
         "workflow_dispatch must not expose a 'pypi' production mode"
+    )
 
 
 def test_normal_push_and_pull_request_do_not_publish() -> None:
@@ -392,8 +393,9 @@ def test_no_unsafe_mixed_index_in_releasing_docs() -> None:
     # a warning against using it.)
     code_blocks = re.findall(r"```[a-zA-Z]*\n(.*?)```", doc, re.DOTALL)
     for block in code_blocks:
-        assert "--extra-index-url https://pypi.org/simple/" not in block, \
+        assert "--extra-index-url https://pypi.org/simple/" not in block, (
             "unsafe mixed-index command must not be presented as a rehearsal"
+        )
     # The safe isolated rehearsal guidance must be present.
     lowered = doc.lower()
     assert "--no-deps" in lowered
