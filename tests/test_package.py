@@ -11,7 +11,7 @@ import importlib.util
 
 import blackscholeslab
 
-EXPECTED_VERSION = "0.1.0.dev0"
+EXPECTED_VERSION = "0.1.0"
 
 
 def test_package_imports() -> None:

@@ -141,7 +141,7 @@ plotting dependencies.
 
 ## Stage 9 — Release-readiness infrastructure
 
-**Status: In progress**
+**Status: In progress (release candidate prepared)**
 
 - Release documentation (`docs/releasing.md`) describing the full release
   process, version formats, TestPyPI rehearsal, production publication, and
@@ -154,15 +154,17 @@ plotting dependencies.
 
 ### Planned path to first public release
 
-- **Release-readiness preparation** — this stage: documentation, checklist,
+- **Release-readiness preparation** — complete: documentation, checklist,
   workflow, and validation tests.
-- **First public 0.1.0 candidate** — version bump from `0.1.0.dev0` to
-  `0.1.0` in an explicitly approved pull request.
-- **TestPyPI rehearsal** — publish to TestPyPI to validate Trusted Publishing,
-  artifact integrity, and installation.
-- **Explicit approval** — human maintainer approval of the release candidate.
-- **Production publication** — publish `0.1.0` to production PyPI.
-- **Compatibility history before 1.0.0** — accumulate real-world usage,
+- **First public 0.1.0 candidate** — in progress: the candidate version is
+  bumped from `0.1.0.dev0` to `0.1.0` on the `release/0.1.0-candidate` branch,
+  pending an explicitly approved pull request into `main`.
+- **TestPyPI rehearsal** — pending: publish to TestPyPI to validate Trusted
+  Publishing, artifact integrity, and installation.
+- **Explicit approval** — pending: human maintainer approval of the release
+  candidate.
+- **Production publication** — pending: publish `0.1.0` to production PyPI.
+- **Compatibility history before 1.0.0** — pending: accumulate real-world usage,
   feedback, and compatibility evidence before considering a `1.0.0` release.
 
 A `1.0.0` release would signal a stronger public API stability promise and

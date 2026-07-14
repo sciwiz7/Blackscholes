@@ -31,7 +31,7 @@ Stable versions use the bare `MAJOR.MINOR.PATCH` format, for example
 
 ## Proposed first public release: 0.1.0
 
-The current development version is `0.1.0.dev0`. The likely first public
+The current candidate version is `0.1.0`. The likely first public
 release is **0.1.0**, not 1.0.0, because:
 
 - `0.1.0.dev0` is the natural predecessor of `0.1.0`.

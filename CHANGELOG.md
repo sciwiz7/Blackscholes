@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No changes yet.
+
+## [0.1.0]
+
+BlackScholesLab 0.1.0 is prepared as a release candidate. It is **not yet
+published**; publication to PyPI remains pending explicit human maintainer
+approval. The package has not been published to PyPI.
+
 ### Added
 
 - Repository foundation: `src`-based package layout for `blackscholeslab`.

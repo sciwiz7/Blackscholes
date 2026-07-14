@@ -46,4 +46,4 @@ def test_undocumented_internal_helpers_not_exported() -> None:
 
 
 def test_version_unchanged() -> None:
-    assert blackscholeslab.__version__ == "0.1.0.dev0"
+    assert blackscholeslab.__version__ == "0.1.0"

@@ -266,7 +266,7 @@ and a small usage example or cross-link.
 ## `__version__` — metadata
 
 - **Category:** metadata (str)
-- **Value:** `"0.1.0.dev0"` (development version; not a stable release).
+- **Value:** `"0.1.0"` (release candidate; not yet published to PyPI).
 - **Example:** `blackscholeslab.__version__`.
 
 ## `__author__` — metadata
