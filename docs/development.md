@@ -62,6 +62,30 @@ mypy
 
 The project uses `mypy` in strict mode. New code must pass type checking.
 
+## Running the command-line interface
+
+After installing with `python -m pip install -e ".[dev]"`, the `blackscholeslab`
+console script is available on the path:
+
+```bash
+blackscholeslab --help
+```
+
+The CLI module can also be run directly from the source tree without installing,
+using the repository-local `.venv` and `PYTHONPATH`:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m blackscholeslab.cli --help
+```
+
+To verify the installed console entry point after building a wheel, install the
+wheel into a clean virtual environment and run, for example:
+
+```bash
+blackscholeslab --help
+blackscholeslab price --type call --spot 100 --strike 100 --time 1 --rate 0.05 --volatility 0.20
+```
+
 ## Pre-commit
 
 Optional local hooks are provided via `.pre-commit-config.yaml`:

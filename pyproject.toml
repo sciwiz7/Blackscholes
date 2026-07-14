@@ -33,6 +33,9 @@ classifiers = [
 ]
 dependencies = []
 
+[project.scripts]
+blackscholeslab = "blackscholeslab.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.2",

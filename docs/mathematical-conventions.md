@@ -310,6 +310,34 @@ inherited unchanged: at `T = 0` the price equals the intrinsic payoff, and at
 `sigma = 0` (with `T > 0`) the exact deterministic discounted payoff is used.
 The scenario module does not reimplement or override these rules.
 
+## Command-line interface interpretation
+
+The `blackscholeslab` CLI is a thin wrapper over the core API and preserves the
+conventions above. CLI-specific interpretation notes:
+
+- **Decimal rates and volatility**: every `--rate`, `--dividend-yield`,
+  `--volatility`, and `--initial-upper-volatility`/`--max-volatility` value is an
+  **annualised decimal** (for example `0.05` is 5%, `0.20` is 20%). The CLI does
+  not accept percentage strings and does not scale inputs. Behaviour matches the
+  Python API exactly; there are no hidden defaults that differ from the core.
+- **Annualised units**: time is supplied in calendar years via `--time`
+  (`time_to_expiry`). The CLI never converts between calendar and trading days.
+- **Raw Greek scaling**: the `greeks` command prints the same raw decimal units
+  as `greeks_european`. `vega`, `rho`, and `dividend_rho` are per a `1.0`
+  absolute change in their respective inputs; `theta` is per one year. The CLI
+  does not divide by 100 or 365.
+- **Scenario percentage-change decimal semantics**: the `price-scenarios`
+  `percentage_change` is the **decimal** return `price_change / base_price`
+  (for example `0.1` means a 10% increase). It is not multiplied by 100. When
+  the base option price is exactly `0.0`, the human view prints `undefined` and
+  JSON prints `null`; the CLI never substitutes `0` or `inf`.
+- **No implicit percent conversion**: no CLI input or output performs silent
+  percentage conversion. JSON values are the raw Python `float` results from the
+  core; only the human-readable text uses a stable `.12g` representation.
+- **Order and duplicates**: `expiry-scenarios` and `price-scenarios` preserve the
+  order and duplicates of the supplied underlying prices or scenario strings,
+  exactly as their core counterparts.
+
 ## Invalid-input handling
 
 Invalid inputs are rejected explicitly before any numerical computation:
