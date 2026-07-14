@@ -1129,8 +1129,7 @@ def test_price_scenarios_invalid_value_reports_index_exit_2() -> None:
             "0.05",
             "--volatility",
             "0.20",
-            "--scenario",
-            "-1,1,0.20,0.05,0.02,bad",
+            "--scenario=-1,1,0.20,0.05,0.02,bad",
             "--json",
         ]
     )
