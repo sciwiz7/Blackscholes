@@ -31,7 +31,7 @@ from blackscholeslab.scenarios import (
     evaluate_price_scenarios,
 )
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 __author__ = "Amrut Deshmukh"
 __license__ = "MIT"
 

@@ -8,13 +8,14 @@ and put pricing, analytical Greeks, implied-volatility solving, expiry payoff an
 profit/loss, and pre-expiry scenario repricing. Every calculation is deterministic
 and reproducible, and the mathematics is documented and inspectable.
 
-## Status: development version
+## Status: release candidate
 
-The current version is **`0.1.0.dev0`**, a development version. The core
-analytics, command-line interface, and interactive demonstration are implemented
-and tested, but the project remains **unreleased** and is **not yet available from
-PyPI**. Do not rely on it for calculations until a stable release is published, and
-do not use it for trading or investment decisions without independent verification.
+The current version is **`0.1.0`**, a release candidate. The core analytics,
+command-line interface, and interactive demonstration are implemented and tested,
+but the project remains **unreleased** and **has not been published to PyPI**.
+Publication is pending explicit human approval. Do not rely on it for calculations
+until a stable release is published, and do not use it for trading or investment
+decisions without independent verification.
 
 ## Installation
 

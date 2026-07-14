@@ -2,11 +2,11 @@
 
 ## Supported versions
 
-**No stable release currently exists.** The project is in early development
-(versions `0.1.0.dev0` and below). Because nothing has been released, there
-are no published versions receiving security updates at this time. Security
-support for released versions will be documented here once the first stable
-release is published.
+**No stable release currently exists.** The current source version is `0.1.0`,
+prepared as a release candidate, but it has not been published to PyPI. Because
+nothing has been released, there are no published versions receiving security
+updates at this time. Security support for released versions will be documented
+here once `0.1.0` is published.
 
 ## Reporting a vulnerability
 

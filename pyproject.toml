@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "blackscholeslab"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "A transparent and carefully tested Python toolkit for Black-Scholes option analytics."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,7 +19,7 @@ keywords = [
     "derivatives",
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
     "Intended Audience :: Financial and Insurance Industry",
     "Intended Audience :: Science/Research",

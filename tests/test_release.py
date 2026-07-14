@@ -11,7 +11,13 @@ These tests verify that:
 - the ``py.typed`` marker is included;
 - Streamlit is not a mandatory dependency;
 - demo extra metadata is present;
-- the version remains the expected development version;
+- the version remains the expected candidate version;
+- the release workflow's production tag would be exactly ``v0.1.0``;
+- mismatched tags would fail;
+- development, alpha, beta, and release-candidate versions would fail the
+  production-stable path;
+- the tagged commit must still be contained in main;
+- no manual production-dispatch mode exists;
 - artifact SHA-256 hashes are computed.
 
 The artifact tests are fully self-contained: a session-scoped fixture builds a
@@ -39,7 +45,7 @@ PYPROJECT = REPO_ROOT / "pyproject.toml"
 RELEASE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "release.yml"
 RELEASING_DOC = REPO_ROOT / "docs" / "releasing.md"
 
-EXPECTED_VERSION = "0.1.0.dev0"
+EXPECTED_VERSION = "0.1.0"
 
 FORBIDDEN_WHEEL_PATTERNS = [
     "__pycache__",
@@ -457,3 +463,55 @@ def test_oidc_only_on_publish_jobs() -> None:
             assert has_oidc, f"{name} must have id-token: write"
         else:
             assert not has_oidc, f"{name} must not have id-token: write"
+
+
+# --------------------------------------------------------------------------- #
+# Production-tag / version-binding regression tests
+# --------------------------------------------------------------------------- #
+def test_production_tag_would_be_v0_1_0() -> None:
+    # The production tag is exactly v<package version>; for this candidate the
+    # package version is the stable 0.1.0, so the tag must be v0.1.0.
+    assert EXPECTED_VERSION == "0.1.0"
+    assert f"v{EXPECTED_VERSION}" == "v0.1.0"
+
+
+def test_candidate_version_is_stable_not_prerelease() -> None:
+    # A 0.1.0 production candidate must not carry dev/a/b/rc markers.
+    for marker in (".dev", "a", "b", "rc"):
+        assert marker not in EXPECTED_VERSION, f"unexpected pre-release marker {marker!r}"
+    assert EXPECTED_VERSION == "0.1.0"
+
+
+def test_workflow_rejects_mismatched_tag() -> None:
+    text = _load_workflow()
+    # The workflow derives EXPECTED_TAG="v${PKG_VERSION}" and fails when the
+    # pushed tag does not equal it exactly.
+    assert 'EXPECTED_TAG="v${PKG_VERSION}"' in text
+    assert 'if [ "$TAG_NAME" != "$EXPECTED_TAG" ]; then' in text
+
+
+def test_workflow_rejects_prerelease_versions_for_production() -> None:
+    text = _load_workflow()
+    # The production path must refuse dev/alpha/beta/release-candidate versions.
+    assert "*.dev*|*a*|*b*|*rc*" in text, (
+        "workflow must reject dev/alpha/beta/rc versions for production"
+    )
+
+
+def test_workflow_requires_tag_commit_in_main_history() -> None:
+    text = _load_workflow()
+    # The tagged commit must be retained in the protected default main history.
+    assert "git merge-base --is-ancestor" in text
+    assert "origin/main" in text
+
+
+def test_no_manual_production_dispatch_mode() -> None:
+    text = _load_workflow()
+    # Production publication is available only via a rigorously validated tag
+    # push; the manual dispatch must not expose a 'pypi' production mode.
+    assert "mode == 'pypi'" not in text
+    dispatch_block = text.split("workflow_dispatch:", 1)[-1]
+    tail = dispatch_block.split("\npermissions:", 1)[0]
+    assert not re.search(r"^\s*-\s*pypi\s*$", tail, re.MULTILINE), (
+        "workflow_dispatch must not expose a 'pypi' production mode"
+    )

@@ -5,14 +5,15 @@ analytical Greeks, implied-volatility calculation, and scenario analysis based o
 the Black-Scholes framework. Every calculation is deterministic and reproducible,
 and the mathematics is documented and inspectable.
 
-> **Status: development version (`0.1.0.dev0`), unreleased.** The European call
+> **Status: release candidate (`0.1.0`), not yet published.** The European call
 > and put pricing core, analytical Greeks, implied-volatility solving, payoff and
 > scenario analysis, a command-line interface, and an optional interactive
-> Streamlit demonstration are implemented and tested, but the project is **not yet
-> available from PyPI**. Do not rely on it for calculations until a stable release
-> is published.
+> Streamlit demonstration are implemented and tested. The project remains
+> **unreleased** and **has not been published to PyPI**; publication is pending
+> explicit human approval. Do not rely on it for calculations until a stable
+> release is published.
 
-## Implemented capabilities (development version)
+## Implemented capabilities (release candidate)
 
 - European call and put pricing (Black-Scholes-Merton, continuous dividend yield).
 - Analytical Greeks: delta, gamma, vega, annual theta, rho, dividend rho.
