@@ -141,6 +141,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         deployment credentials and no permissive cross-origin settings.
       - No impact on core runtime dependencies: `dependencies = []` is
         preserved and Streamlit remains isolated in the `demo` optional extra.
+    - Documentation and tutorials (Stage 8):
+      - Documentation index `docs/index.md` with project purpose, development
+        status, installation paths, quick-start navigation, tutorial/reference
+        links, architecture/development links, CLI and demo links, and the
+        educational/non-advice warning.
+      - Public API reference `docs/api-reference.md` covering every symbol in
+        `blackscholeslab.__all__` (category, purpose, parameters/fields, return
+        type, validation, exceptions, boundary behaviour, and a usage example),
+        verified against `__all__` by the documentation tests.
+      - Five worked tutorials under `docs/tutorials/`:
+        - `pricing-and-greeks.md` — inputs, call/put pricing, dividends, expiry
+          and zero-volatility boundaries, finite negative rates/yields, and all
+          six Greeks with raw-unit explanations and deterministic expected
+          results.
+        - `implied-volatility.md` — market snapshot, solving, repricing residual,
+          solver controls, no-arbitrage bounds, zero-volatility lower bound,
+          upper-bound policy, non-convergence behaviour, and decimal/percent
+          display.
+        - `payoff-and-scenarios.md` — intrinsic payoff, long-option expiry P&L,
+          ordered expiry grids, fixed-strike pre-expiry repricing, order/duplicate
+          preservation, percentage-change `None` policy, and excluded market
+          mechanics.
+        - `command-line-interface.md` — all seven commands with purpose,
+          invocation, important arguments, human/JSON modes, deterministic JSON
+          semantics, decimal-unit policy, exit codes, stderr behaviour, scenario
+          ordering, and negative-leading scenario syntax.
+        - `interactive-demo.md` — installation, launch, five tabs, sidebar inputs,
+          raw Greek units, implied-volatility controls, long-option premium
+          semantics, scenario ordering, percentage-change policy, error
+          presentation, telemetry-disabled/local-only limitation, and
+          educational disclaimer.
+      - Three executable, deterministic examples under `examples/`
+        (`pricing_and_greeks.py`, `implied_volatility.py`, `payoff_and_scenarios.py`),
+        each with a `main()` function, complete type annotations, a `__main__`
+        guard, no network/file I/O, no randomness, and no duplicated financial
+        formulas; validated for successful, deterministic execution.
+      - `tests/test_documentation.py` validating local Markdown links, API-reference
+        coverage of `__all__`, example execution and determinism, documented CLI
+        command execution, absence of release/PyPI claims, absence of secrets and
+        absolute local paths, and compilation of contractual Python snippets,
+        using only the standard library.
+      - Expanded `docs/architecture.md` (documentation/examples layer and
+        dependency direction), `docs/development.md` (running examples,
+        documentation validation, supported Python versions, contribution
+        workflow), and an updated `examples/README.md`.
+      - A concise `README.md` entry point linking to the documentation index and
+        tutorials rather than duplicating them.
 
 ### Not yet implemented
 

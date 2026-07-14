@@ -117,10 +117,27 @@ plotting dependencies.
 
 ## Stage 8 — Documentation and tutorials
 
-**Status: Planned**
+**Status: Completed**
 
-- Usage tutorials, worked examples, and reference documentation.
-- Expanded mathematical references.
+- Documentation index `docs/index.md` with project purpose, development status,
+  installation paths (core and demo), quick-start navigation, tutorial/reference
+  links, architecture/development links, CLI and demo links, and the
+  educational/non-advice warning.
+- Public API reference `docs/api-reference.md` covering every symbol in
+  `blackscholeslab.__all__`, verified against `__all__` by the documentation tests.
+- Five worked tutorials under `docs/tutorials/`: pricing-and-greeks,
+  implied-volatility, payoff-and-scenarios, command-line-interface, and
+  interactive-demo.
+- Three executable, deterministic examples under `examples/` validated for
+  successful, deterministic execution by `tests/test_documentation.py`.
+- `tests/test_documentation.py` validating local Markdown links, API-reference
+  coverage of `__all__`, example execution and determinism, documented CLI command
+  execution, absence of release/PyPI claims, absence of secrets and absolute
+  local paths, and compilation of contractual Python snippets, using only the
+  standard library.
+- Expanded `docs/architecture.md` and `docs/development.md`, plus an updated
+  `examples/README.md` and a concise `README.md` entry point linking to the
+  documentation index and tutorials.
 
 ## Stage 9 — First stable release
 
