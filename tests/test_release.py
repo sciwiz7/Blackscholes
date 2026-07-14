@@ -14,8 +14,10 @@ These tests verify that:
 - the version remains the expected development version;
 - artifact SHA-256 hashes are computed.
 
-The tests use only the Python standard library and assume that a wheel and
-sdist have already been built into ``dist/`` by ``python -m build``.
+The artifact tests are fully self-contained: a session-scoped fixture builds a
+fresh wheel and sdist exactly once into a pytest-managed temporary directory
+(never the repository-root ``dist/``), and every artifact test receives the
+exact built paths. No pre-existing or locally cached build output is trusted.
 """
 
 from __future__ import annotations
@@ -23,12 +25,15 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 import re
+import subprocess
+import sys
 import tarfile
 import zipfile
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DIST_DIR = REPO_ROOT / "dist"
 SRC_INIT = REPO_ROOT / "src" / "blackscholeslab" / "__init__.py"
 PYPROJECT = REPO_ROOT / "pyproject.toml"
 RELEASE_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "release.yml"
@@ -58,18 +63,6 @@ FORBIDDEN_SDIST_PATTERNS = [
     ".pytest_cache/",
     ".coverage",
 ]
-
-
-def _find_single(pattern: str) -> Path:
-    """Return the single matching file in dist/ or fail loudly."""
-    matches = sorted(DIST_DIR.glob(pattern))
-    assert len(matches) >= 1, f"No artifact matching {pattern!r} in {DIST_DIR}"
-    return matches[-1]
-
-
-def _get_runtime_version() -> str:
-    """Read the version from the installed package metadata."""
-    return importlib.metadata.version("blackscholeslab")
 
 
 def _read_pyproject_version() -> str:
@@ -103,6 +96,32 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def _get_runtime_version() -> str:
+    """Read the version from the installed package metadata."""
+    return importlib.metadata.version("blackscholeslab")
+
+
+@pytest.fixture(scope="session")
+def artifacts(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
+    """Build a fresh wheel and sdist once per session into a temp directory.
+
+    The artifacts are produced by ``python -m build`` into a pytest-managed
+    temporary directory, never into the repository-root ``dist/``. Exactly one
+    wheel and one sdist must be present; multiple artifacts are rejected so the
+    tests never select an arbitrary "latest" file.
+    """
+    out_dir = tmp_path_factory.mktemp("release_artifacts")
+    subprocess.run(
+        [sys.executable, "-m", "build", "--outdir", str(out_dir), str(REPO_ROOT)],
+        check=True,
+    )
+    wheels = sorted(out_dir.glob("*.whl"))
+    sdists = sorted(out_dir.glob("*.tar.gz"))
+    assert len(wheels) == 1, f"expected exactly one wheel, found {wheels}"
+    assert len(sdists) == 1, f"expected exactly one sdist, found {sdists}"
+    return {"wheel": wheels[0], "sdist": sdists[0]}
+
+
 # --------------------------------------------------------------------------- #
 # Version consistency
 # --------------------------------------------------------------------------- #
@@ -129,17 +148,17 @@ def test_runtime_version_matches_pyproject() -> None:
 # --------------------------------------------------------------------------- #
 # Artifact existence and hashing
 # --------------------------------------------------------------------------- #
-def test_wheel_exists() -> None:
-    _find_single("*.whl")
+def test_wheel_exists(artifacts: dict[str, Path]) -> None:
+    assert artifacts["wheel"].is_file()
 
 
-def test_sdist_exists() -> None:
-    _find_single("*.tar.gz")
+def test_sdist_exists(artifacts: dict[str, Path]) -> None:
+    assert artifacts["sdist"].is_file()
 
 
-def test_artifact_sha256_hashes() -> None:
-    wheel = _find_single("*.whl")
-    sdist = _find_single("*.tar.gz")
+def test_artifact_sha256_hashes(artifacts: dict[str, Path]) -> None:
+    wheel = artifacts["wheel"]
+    sdist = artifacts["sdist"]
     assert _sha256(wheel)
     assert _sha256(sdist)
 
@@ -147,15 +166,15 @@ def test_artifact_sha256_hashes() -> None:
 # --------------------------------------------------------------------------- #
 # Wheel content inspection
 # --------------------------------------------------------------------------- #
-def test_wheel_contains_py_typed() -> None:
-    wheel_path = _find_single("*.whl")
+def test_wheel_contains_py_typed(artifacts: dict[str, Path]) -> None:
+    wheel_path = artifacts["wheel"]
     with zipfile.ZipFile(wheel_path) as zf:
         names = zf.namelist()
     assert any("py.typed" in name for name in names), "py.typed not found in wheel"
 
 
-def test_wheel_contains_cli_entry_point() -> None:
-    wheel_path = _find_single("*.whl")
+def test_wheel_contains_cli_entry_point(artifacts: dict[str, Path]) -> None:
+    wheel_path = artifacts["wheel"]
     with zipfile.ZipFile(wheel_path) as zf:
         names = zf.namelist()
     assert any(name.endswith("METADATA") for name in names), "No METADATA in wheel"
@@ -167,16 +186,16 @@ def test_wheel_contains_cli_entry_point() -> None:
                 break
 
 
-def test_wheel_no_forbidden_files() -> None:
-    wheel_path = _find_single("*.whl")
+def test_wheel_no_forbidden_files(artifacts: dict[str, Path]) -> None:
+    wheel_path = artifacts["wheel"]
     with zipfile.ZipFile(wheel_path) as zf:
         names = zf.namelist()
     offenders = [n for n in names if any(p in n for p in FORBIDDEN_WHEEL_PATTERNS)]
     assert not offenders, f"Forbidden files in wheel: {offenders}"
 
 
-def test_wheel_no_streamlit_mandatory_dependency() -> None:
-    wheel_path = _find_single("*.whl")
+def test_wheel_no_streamlit_mandatory_dependency(artifacts: dict[str, Path]) -> None:
+    wheel_path = artifacts["wheel"]
     with zipfile.ZipFile(wheel_path) as zf:
         for name in zf.namelist():
             if name.endswith("METADATA"):
@@ -191,8 +210,8 @@ def test_wheel_no_streamlit_mandatory_dependency() -> None:
                         )
 
 
-def test_wheel_metadata_version_matches() -> None:
-    wheel_path = _find_single("*.whl")
+def test_wheel_metadata_version_matches(artifacts: dict[str, Path]) -> None:
+    wheel_path = artifacts["wheel"]
     with zipfile.ZipFile(wheel_path) as zf:
         for name in zf.namelist():
             if name.endswith("METADATA"):
@@ -208,8 +227,8 @@ def test_wheel_metadata_version_matches() -> None:
 # --------------------------------------------------------------------------- #
 # Sdist content inspection
 # --------------------------------------------------------------------------- #
-def test_sdist_contains_expected_directories() -> None:
-    sdist_path = _find_single("*.tar.gz")
+def test_sdist_contains_expected_directories(artifacts: dict[str, Path]) -> None:
+    sdist_path = artifacts["sdist"]
     with tarfile.open(sdist_path, "r:gz") as tf:
         names = tf.getnames()
     assert any("src/blackscholeslab" in n for n in names), "src/blackscholeslab not in sdist"
@@ -218,23 +237,23 @@ def test_sdist_contains_expected_directories() -> None:
     assert any("examples/" in n for n in names), "examples/ not in sdist"
 
 
-def test_sdist_contains_demo() -> None:
-    sdist_path = _find_single("*.tar.gz")
+def test_sdist_contains_demo(artifacts: dict[str, Path]) -> None:
+    sdist_path = artifacts["sdist"]
     with tarfile.open(sdist_path, "r:gz") as tf:
         names = tf.getnames()
     assert any("demo/" in n for n in names), "demo/ not in sdist"
 
 
-def test_sdist_no_forbidden_files() -> None:
-    sdist_path = _find_single("*.tar.gz")
+def test_sdist_no_forbidden_files(artifacts: dict[str, Path]) -> None:
+    sdist_path = artifacts["sdist"]
     with tarfile.open(sdist_path, "r:gz") as tf:
         names = tf.getnames()
     offenders = [n for n in names if any(p in n for p in FORBIDDEN_SDIST_PATTERNS)]
     assert not offenders, f"Forbidden files in sdist: {offenders}"
 
 
-def test_sdist_metadata_version_matches() -> None:
-    sdist_path = _find_single("*.tar.gz")
+def test_sdist_metadata_version_matches(artifacts: dict[str, Path]) -> None:
+    sdist_path = artifacts["sdist"]
     with tarfile.open(sdist_path, "r:gz") as tf:
         for member in tf.getmembers():
             if member.name.endswith("PKG-INFO"):
@@ -249,8 +268,8 @@ def test_sdist_metadata_version_matches() -> None:
     raise AssertionError("No Version field in sdist PKG-INFO")
 
 
-def test_sdist_no_streamlit_mandatory_dependency() -> None:
-    sdist_path = _find_single("*.tar.gz")
+def test_sdist_no_streamlit_mandatory_dependency(artifacts: dict[str, Path]) -> None:
+    sdist_path = artifacts["sdist"]
     with tarfile.open(sdist_path, "r:gz") as tf:
         for member in tf.getmembers():
             if member.name.endswith("PKG-INFO"):
