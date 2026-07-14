@@ -338,6 +338,36 @@ conventions above. CLI-specific interpretation notes:
   order and duplicates of the supplied underlying prices or scenario strings,
   exactly as their core counterparts.
 
+## Interactive demonstration interpretation
+
+The `demo/` Streamlit demonstration reuses the public core APIs exactly; it
+performs no financial calculations of its own. The following conventions apply
+only to how the demonstration presents results:
+
+- **Decimal rates and volatility**: every sidebar rate and volatility input is an
+  annualised decimal (for example `0.05` is 5%, `0.20` is 20%). The
+  demonstration does not accept percentage strings and does not scale inputs.
+- **Raw Greek scaling**: the Greeks tab shows the same raw decimal units as
+  `greeks_european` — vega per a `1.0` absolute change in volatility, rho and
+  dividend rho per a `1.0` absolute change in rate or yield, and theta per one
+  year. The demonstration does not divide by 100 or 365.
+- **Annual theta**: theta is the price change per one year of calendar time
+  passing (negative for long options).
+- **Long-option premium semantics**: the expiry-payoff tab treats the premium as
+  the amount paid for one option unit; no contract multiplier, position quantity,
+  or discounting is applied, and short positions are not inferred. The break-even
+  underlying price (strike ± premium) is explanatory arithmetic only.
+- **Scenario strike remains fixed**: in the scenario-analysis tab the strike is
+  taken from the base option and stays fixed across scenarios; only spot, time to
+  expiry, volatility, risk-free rate, and dividend yield vary per scenario.
+- **Percentage-change `None` policy**: scenario percentage change is the decimal
+  return `price_change / base_price`; when the base option price is exactly
+  `0.0`, the demonstration displays `undefined` and never substitutes `0` or
+  `inf`.
+- **Educational-only limitation**: the demonstration provides no financial
+  recommendations and no live or historical market data; all inputs are supplied
+  by the user through the interface.
+
 ## Invalid-input handling
 
 Invalid inputs are rejected explicitly before any numerical computation:

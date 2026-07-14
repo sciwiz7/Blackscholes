@@ -26,10 +26,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package with development dependencies
+      - name: Install package with development and demonstration dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
+          python -m pip install -e ".[dev,demo]"
 
       - name: Ruff format check
         run: ruff format --check .

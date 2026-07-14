@@ -6,9 +6,10 @@ on the Black-Scholes framework.
 
 > **Status: early development.** The European call and put pricing core, the
 > analytical Greeks, implied-volatility solving, payoff and scenario analysis,
-> and a command-line interface are implemented in the current development version,
-> but the project remains **unreleased** and is **not yet available from PyPI**.
-> Do not rely on this project for calculations until a stable release is published.
+> a command-line interface, and an optional interactive Streamlit demonstration
+> are implemented in the current development version, but the project remains
+> **unreleased** and is **not yet available from PyPI**. Do not rely on this
+> project for calculations until a stable release is published.
 
 ## Purpose
 
@@ -39,15 +40,71 @@ The following are implemented in the current development version:
   implied volatility, payoff, expiry profit/loss, and scenario analysis with
   human-readable and deterministic JSON output. The CLI is implemented in the
   development version but is not yet published on a package index.
+- An optional interactive Streamlit demonstration (`demo/`) for exploring
+  European option prices, analytical Greeks, implied volatility, expiry payoff,
+  and pre-expiry scenarios in the browser. The demonstration depends only on the
+  public core APIs and is implemented in the development version but is not yet
+  published on a package index.
 
 ## Planned capabilities
 
 The following capabilities are planned and will be added in later stages:
 
-- Educational visualisations
-- An optional interactive demonstration
+- Additional educational visualisations
 
-These are not available yet.
+## Interactive demonstration
+
+The interactive demonstration is implemented in the development version and is
+**not** available from PyPI. It is an educational, browser-based view over the
+existing public BlackScholesLab APIs; it performs no financial mathematics of
+its own and makes no network calls, uses no live market data, requires no
+account or authentication, and stores no user data.
+
+Install the development and demonstration extras:
+
+```bash
+python -m pip install -e ".[dev,demo]"
+```
+
+Launch the demonstration:
+
+```bash
+streamlit run demo/app.py
+```
+
+The demonstration presents five sections:
+
+1. **Price** — European call and put prices from `price_european`.
+2. **Greeks** — analytical Greeks (delta, gamma, vega, annual theta, rho,
+   dividend rho) from `greeks_european`.
+3. **Implied volatility** — implied volatility solving from `implied_volatility`.
+4. **Expiry payoff** — intrinsic payoff and long-option profit/loss from
+   `evaluate_expiry_scenarios`.
+5. **Scenario analysis** — pre-expiry scenario repricing from
+   `evaluate_price_scenarios`, with the strike fixed from the base option.
+
+### Conventions used by the demonstration
+
+- **Annualised decimal rates and volatility** — every rate and volatility input
+  is an annualised decimal (for example `0.05` is a 5% rate and `0.20` is 20%
+  volatility). The demonstration does not accept percentage strings and does not
+  scale inputs.
+- **Long-option premium policy** — the expiry payoff section treats the premium
+  as the amount paid for one option unit; no contract multiplier or position
+  quantity is assumed, no discounting is applied, and short positions are not
+  inferred.
+- **Raw Greek units** — the Greeks use raw decimal units, not percentage
+  points: vega is the price change for an absolute `1.0` change in volatility,
+  rho and dividend rho are for an absolute `1.0` change in rate or yield, and
+  theta is per one year of calendar time. Values are not divided by 100 or 365.
+- **Zero-base percentage policy** — scenario percentage change is a decimal
+  return (`price_change / base_price`); when the base option price is exactly
+  zero, the demonstration shows `undefined` rather than substituting zero or
+  infinity.
+
+The demonstration is optional and isolated: Streamlit is only an extra
+dependency for the demo, the core runtime dependencies remain empty, and the
+core package never imports the demonstration or Streamlit.
 
 ## Intended users
 
