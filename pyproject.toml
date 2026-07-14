@@ -43,6 +43,9 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
 ]
+demo = [
+    "streamlit>=1.59,<2",
+]
 
 [project.urls]
 Homepage = "https://github.com/sciwiz7/Blackscholes"
@@ -51,14 +54,16 @@ Issues = "https://github.com/sciwiz7/Blackscholes/issues"
 Changelog = "https://github.com/sciwiz7/Blackscholes/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/blackscholeslab"]
+packages = ["src/blackscholeslab", "demo"]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/blackscholeslab",
+    "demo",
     "tests",
     "docs",
     "examples",
+    ".streamlit",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
@@ -82,8 +87,18 @@ ignore = ["B008"]
 python_version = "3.11"
 strict = true
 warn_unused_configs = true
-files = ["src", "tests"]
+follow_imports_for_stubs = true
+files = ["src", "demo", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --cov=blackscholeslab --cov-report=term-missing --cov-report=xml"
+addopts = "-ra --cov=blackscholeslab --cov=demo --cov-branch --cov-report=term-missing --cov-report=xml"
+
+[[tool.mypy.overrides]]
+module = [
+    "streamlit",
+    "streamlit.*",
+    "numpy",
+    "numpy.*",
+]
+follow_imports = "skip"

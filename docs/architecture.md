@@ -3,8 +3,9 @@
 This document describes the **actual** architecture of the BlackScholesLab
 development version. The European pricing core, analytical Greeks, implied
 volatility solver, payoff analysis, and pre-expiry scenario analysis are
-implemented. CLI and demonstration remain future connections and are not yet
-present.
+implemented. A command-line interface (`cli.py`) is also implemented, and an
+optional interactive Streamlit demonstration (`demo/`) is implemented with
+strict isolation from the core.
 
 ## Goals
 
@@ -212,6 +213,62 @@ The CLI is intentionally not exported from `blackscholeslab.__init__`; importing
 the core package must not import the CLI, and the core modules must never import
 `cli`.
 
+### Interactive demonstration (`demo/`)
+
+`demo/` is an optional, dependency-isolated Streamlit demonstration for
+education. It depends only on the public core API (`price_european`,
+`greeks_european`, `implied_volatility`, `evaluate_expiry_scenarios`,
+`evaluate_price_scenarios`, and the typed input/result models) and reuses those
+functions as the single source of truth. It contains no duplicated pricing,
+Greek, implied-volatility, intrinsic-payoff, or scenario-repricing formulas.
+
+The demonstration is organised as:
+
+- `demo/app.py` — the Streamlit application. It builds a shared
+  `BlackScholesInputs` from keyed sidebar widgets, maps the displayed Call/Put
+  value explicitly to `OptionType.CALL`/`OptionType.PUT`, and renders five tabs
+  (Price, Greeks, Implied volatility, Expiry payoff, Scenario analysis). Each
+  tab calls the corresponding public core function and renders the result with
+  native Streamlit elements (`st.metric`, `st.table`, `st.line_chart`). Expected
+  user/domain errors (`TypeError`, `ValueError`, `RuntimeError` from implied
+  volatility non-convergence, and `OverflowError` from extreme standard-library
+  exponentials) are caught and shown as concise `st.error` messages without raw
+  tracebacks, while unexpected internal failures remain visible during
+  development and testing.
+- `demo/helpers.py` — deterministic, typed, framework-independent preparation
+  logic. It contains no Streamlit imports, no financial-formula duplication, no
+  network or file I/O, no hidden global state, and no mutable defaults. It
+  provides `inclusive_grid` (an inclusive, index-interpolated underlying-price
+  grid built only from the standard library), `option_type_from_label` (explicit
+  Call/Put mapping), formatting helpers, `break_even_price` (explanatory
+  long-option arithmetic only), row builders from immutable core results, and
+  `default_scenario_specs` (deterministic scenario presets).
+- `demo/__init__.py` — package marker. The demonstration is never exported from
+  `blackscholeslab.__init__`.
+
+`.streamlit/config.toml` disables Streamlit usage-statistics collection
+(`gatherUsageStats = false`) and adds no secrets or deployment credentials and no
+permissive cross-origin or security settings.
+
+Design properties:
+
+- **Optional dependency isolation**: Streamlit is confined to the `demo` optional
+  extra in `pyproject.toml`; the core `dependencies` list remains empty. The
+  core package imports neither Streamlit nor `demo`.
+- **Demo-to-core dependency direction**: `demo` depends on the core, never the
+  reverse. The core modules never import `demo` or Streamlit, and `demo` is not
+  part of the importable core package.
+- **No duplicated mathematics**: every price, Greek, implied volatility, payoff,
+  and scenario value is produced by the existing public core functions; the
+  demonstration performs no financial calculations of its own.
+- **No persistence, network access, or live data**: the demonstration makes no
+  network calls, uses no live market data, requires no account or authentication,
+  and stores no user data; it provides no financial recommendations.
+- **Headless testing with AppTest**: `tests/test_demo.py` uses
+  `streamlit.testing.v1.AppTest` for focused headless application tests and also
+  tests `demo/helpers.py` directly, including verification (by monkeypatching)
+  that the demonstration calls the existing public APIs.
+
 ## Dependency direction
 
 The dependency graph is strictly layered and acyclic:
@@ -220,11 +277,12 @@ The dependency graph is strictly layered and acyclic:
 cli / demo  ->  pricing / greeks / implied_volatility / payoff / scenarios  ->  models / validation / numerical
 ```
 
-- Future interfaces (CLI, demo) will depend on the core (`pricing`, `greeks`,
-  `models`, `validation`, `numerical`).
+- Interfaces (`cli`, `demo`) depend on the core (`pricing`, `greeks`,
+  `implied_volatility`, `payoff`, `scenarios`, `models`, `validation`,
+  `numerical`).
 - The core depends only on its sibling modules and the standard library.
-- The mathematical core must **not** depend on the CLI or any web/visualisation
-  layer.
+- The mathematical core must **not** depend on the CLI, the demonstration, or any
+  web/visualisation layer.
 
 ### Why the core must not depend on the CLI or web layer
 
@@ -282,8 +340,11 @@ its own fields on construction.
 - **CLI** (implemented): `cli.py` depends on the core (pricing, greeks,
   implied-volatility, payoff, scenarios, models, validation) and on the standard
   library, but never the reverse; the core does not import the CLI.
-- **Demonstration** (future, optional): will depend on the core but never the
-  reverse, and will not be imported by the core.
+- **Demonstration** (implemented, optional): `demo/` depends on the core
+  (pricing, greeks, implied-volatility, payoff, scenarios, models, validation)
+  and on Streamlit as an optional extra, but never the reverse; the core does not
+  import the demonstration or Streamlit. The demonstration is not exported from
+  `blackscholeslab.__init__`.
 
 ## Numerical testing strategy
 

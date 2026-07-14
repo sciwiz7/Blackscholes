@@ -97,10 +97,23 @@ plotting dependencies.
 
 ## Stage 7 — Interactive demonstration
 
-**Status: Planned**
+**Status: Completed**
 
-- An optional, dependency-isolated demonstration for education.
-- No impact on the importable core.
+- An optional, dependency-isolated Streamlit demonstration (`demo/`) for
+  education, depending only on the existing public core APIs.
+- Five tabs: Price, Greeks, Implied volatility, Expiry payoff, and Scenario
+  analysis, with shared keyed sidebar inputs and educational defaults.
+- `demo/helpers.py` provides deterministic, typed, framework-independent
+  preparation logic with no Streamlit imports and no duplicated financial
+  formulas.
+- Expected-error handling shows concise user-facing messages without raw
+  tracebacks.
+- Telemetry disabled in `.streamlit/config.toml`; no secrets or deployment
+  credentials.
+- No impact on the importable core: `dependencies = []` is preserved and
+  Streamlit remains isolated in the `demo` optional extra.
+- Headless application tests via `streamlit.testing.v1.AppTest`, plus direct
+  tests of `demo/helpers` and core-delegation verification.
 
 ## Stage 8 — Documentation and tutorials
 

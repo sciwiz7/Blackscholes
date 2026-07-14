@@ -96,13 +96,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - No-runtime-dependency design; the CLI uses only the standard library
         (`argparse`, `json`, `sys`) plus the existing public core API.
       - CLI tests and clean-install command smoke tests (wheel and sdist).
+    - Optional interactive Streamlit demonstration (`demo/`):
+      - `demo/app.py` — a browser-based educational demonstration of European
+        option analytics with no duplicated financial formulas, depending only
+        on the existing public core APIs.
+      - Five tabs: Price, Greeks, Implied volatility, Expiry payoff, and
+        Scenario analysis.
+      - Shared, keyed sidebar inputs for the base option assumptions with
+        educational defaults (call, spot 100, strike 100, time 1.0, rate 0.05,
+        volatility 0.20, dividend yield 0.02).
+      - Price section using `price_european`, with stable human formatting that
+        retains the raw value internally.
+      - Greeks section using `greeks_european`, displaying the six Greeks with
+        explicit raw-unit explanations.
+      - Implied-volatility section using `implied_volatility` with public solver
+        defaults, showing the annualised decimal result plus an explicitly
+        labelled percent display, the repriced value, and the absolute
+        repricing residual.
+      - Expiry-payoff section using `evaluate_expiry_scenarios`, with a
+        deterministic inclusive grid helper, an ordered table, a native line
+        chart, maximum-loss and break-even explanations, and explicit long-option
+        premium semantics.
+      - Scenario-analysis section using `evaluate_price_scenarios`, with one to
+        five keyed scenarios (Downside/Base/Upside presets plus neutral
+        defaults), preserving order and duplicates, keeping the strike fixed, and
+        rendering `undefined` for a zero-base percentage change.
+      - `demo/helpers.py` — deterministic, typed, framework-independent
+        preparation logic (inclusive grid, option-type mapping, formatting,
+        break-even arithmetic, row construction, default scenario specs) with no
+        Streamlit imports, no financial-formula duplication, and no network or
+        file I/O.
+      - `demo/__init__.py` — package marker; the demonstration is never exported
+        from the core package.
+      - Expected-error handling that shows concise user-facing messages without
+        raw tracebacks for `TypeError`, `ValueError`, `RuntimeError` (implied
+        volatility non-convergence), and `OverflowError` (extreme exponential
+        calculations), without broadly swallowing programming bugs.
+      - `tests/test_demo.py` — focused headless application tests using
+        `streamlit.testing.v1.AppTest` plus direct tests of `demo/helpers`,
+        including core-delegation verification that the demonstration calls the
+        existing public APIs and contains no duplicated mathematics.
+      - Telemetry configuration in `.streamlit/config.toml` disabling Streamlit
+        usage statistics (`gatherUsageStats = false`) with no secrets or
+        deployment credentials and no permissive cross-origin settings.
+      - No impact on core runtime dependencies: `dependencies = []` is
+        preserved and Streamlit remains isolated in the `demo` optional extra.
 
 ### Not yet implemented
 
 The following planned capabilities are **not** yet part of this release and
 have no implemented code:
 
-- Interactive demonstration
+- Additional educational visualisations
 
 ## [0.1.0-dev0]
 

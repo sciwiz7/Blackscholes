@@ -1,0 +1,12 @@
+[theme]
+base = "light"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
+runOnSave = false
+
+[logger]
+level = "info"
