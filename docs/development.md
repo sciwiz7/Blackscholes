@@ -143,6 +143,54 @@ blackscholeslab --help
 blackscholeslab price --type call --spot 100 --strike 100 --time 1 --rate 0.05 --volatility 0.20
 ```
 
+## Running the examples
+
+The `examples/` directory holds self-contained, deterministic scripts that exercise
+only the public core API. Each has a `main()` function and a `__main__` guard, so
+it can be run directly or imported:
+
+```bash
+python examples/pricing_and_greeks.py
+python examples/implied_volatility.py
+python examples/payoff_and_scenarios.py
+```
+
+The scripts contain no network or file I/O and no randomness, and they produce
+deterministic output. They are also executed by `tests/test_documentation.py`.
+
+## Validating the documentation
+
+The documentation is validated through the ordinary test suite. Run the full suite
+(which includes `tests/test_documentation.py`):
+
+```bash
+pytest
+```
+
+`tests/test_documentation.py` checks, among other things, that every local
+Markdown link resolves, that every public `__all__` symbol appears in
+`docs/api-reference.md`, that each example runs successfully and deterministically,
+that the documented CLI commands execute, that no release/PyPI claim appears, and
+that no absolute local paths or secrets appear. Do not add a third-party Markdown
+parser; the checks use only the standard library.
+
+## Supported Python versions
+
+BlackScholesLab supports **Python 3.11 and 3.12** (`requires-python = ">=3.11"`).
+Continuous integration runs the lint, type-check, and test matrix on both
+versions. The core dependencies remain empty; Streamlit is isolated in the optional
+`demo` extra.
+
+## Contribution workflow
+
+- Create a feature branch from `main` (for example `feature/<topic>`).
+- Make focused, tested changes; keep core behaviour deterministic and documented.
+- Run `ruff format .`, `ruff check .`, `mypy`, and `pytest` before opening a pull
+  request.
+- Keep coverage at 100% for the core and the demo (`--cov-branch` is enabled).
+- See [CONTRIBUTING.md](../CONTRIBUTING.md) for the full expectations and the
+  issue/PR templates.
+
 ## Pre-commit
 
 Optional local hooks are provided via `.pre-commit-config.yaml`:

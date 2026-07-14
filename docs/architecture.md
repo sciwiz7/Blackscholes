@@ -274,15 +274,46 @@ Design properties:
 The dependency graph is strictly layered and acyclic:
 
 ```
-cli / demo  ->  pricing / greeks / implied_volatility / payoff / scenarios  ->  models / validation / numerical
+docs / examples / cli / demo  ->  pricing / greeks / implied_volatility / payoff / scenarios  ->  models / validation / numerical
 ```
 
-- Interfaces (`cli`, `demo`) depend on the core (`pricing`, `greeks`,
-  `implied_volatility`, `payoff`, `scenarios`, `models`, `validation`,
-  `numerical`).
+- Interfaces (`cli`, `demo`), the documentation (`docs`), and the examples
+  (`examples`) all depend on the core (`pricing`, `greeks`, `implied_volatility`,
+  `payoff`, `scenarios`, `models`, `validation`, `numerical`). The examples depend
+  only on the **public** core API (`blackscholeslab.__all__`).
 - The core depends only on its sibling modules and the standard library.
-- The mathematical core must **not** depend on the CLI, the demonstration, or any
-  web/visualisation layer.
+- The mathematical core must **not** depend on the CLI, the demonstration, the
+  documentation, or the examples. `pricing.py` and `greeks.py` do not import
+  `scenarios.py`, `cli.py`, `demo`, `docs`, or `examples`; the CLI and demo import
+  the core but are never imported by it.
+- There is **no duplicated mathematics**: the CLI, demo, and examples reuse the
+  public core functions as the single source of truth and contain no
+  reimplemented pricing, Greek, implied-volatility, payoff, or scenario formulas.
+
+### Documentation and examples layer
+
+`docs/` and `examples/` are documentation and runnable example assets. They are
+**not** importable core modules and are not part of the installed `blackscholeslab`
+package namespace.
+
+- `docs/index.md` — the documentation landing page with navigation, installation,
+  status, and the educational/non-advice warning.
+- `docs/api-reference.md` — every public symbol exported from
+  `blackscholeslab.__all__`.
+- `docs/tutorials/` — worked tutorials (pricing and Greeks, implied volatility,
+  payoff and scenarios, command-line interface, interactive demo).
+- `docs/mathematical-conventions.md`, `docs/architecture.md`, `docs/development.md`
+  — reference and process documentation.
+- `examples/` — self-contained, deterministic Python scripts
+  (`pricing_and_greeks.py`, `implied_volatility.py`, `payoff_and_scenarios.py`)
+  that exercise only the public core API. Each has a `main()` function, complete
+  type annotations, a `__main__` guard, no network or file I/O, no randomness, and
+  no duplicated financial formulas.
+
+These layers are validated by `tests/test_documentation.py`, which checks that
+every local Markdown link resolves, that every `__all__` symbol appears in the API
+reference, that each example runs deterministically, that the documented CLI
+commands execute, and that no release/PyPI or secret/path claims appear.
 
 ### Why the core must not depend on the CLI or web layer
 
