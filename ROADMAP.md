@@ -139,12 +139,37 @@ plotting dependencies.
   `examples/README.md` and a concise `README.md` entry point linking to the
   documentation index and tutorials.
 
-## Stage 9 — First stable release
+## Stage 9 — Release-readiness infrastructure
 
-**Status: Planned**
+**Status: In progress**
 
-- Semantic versioning `1.0.0` once the core is complete, tested, and reviewed.
-- Published on a package index with full documentation.
+- Release documentation (`docs/releasing.md`) describing the full release
+  process, version formats, TestPyPI rehearsal, production publication, and
+  rollback guidance.
+- Operational release checklist (`RELEASE_CHECKLIST.md`).
+- Secure GitHub Actions release workflow (`.github/workflows/release.yml`)
+  using OIDC Trusted Publishing.
+- Version-consistency and artifact-validation tests (`tests/test_release.py`).
+- Staged plan for the first public release.
+
+### Planned path to first public release
+
+- **Release-readiness preparation** — this stage: documentation, checklist,
+  workflow, and validation tests.
+- **First public 0.1.0 candidate** — version bump from `0.1.0.dev0` to
+  `0.1.0` in an explicitly approved pull request.
+- **TestPyPI rehearsal** — publish to TestPyPI to validate Trusted Publishing,
+  artifact integrity, and installation.
+- **Explicit approval** — human maintainer approval of the release candidate.
+- **Production publication** — publish `0.1.0` to production PyPI.
+- **Compatibility history before 1.0.0** — accumulate real-world usage,
+  feedback, and compatibility evidence before considering a `1.0.0` release.
+
+A `1.0.0` release would signal a stronger public API stability promise and
+should only be considered after sufficient real-world compatibility history
+and explicit maintainer agreement that the stability bar has been reached.
+
+The project remains unreleased and is not available from PyPI.
 
 ## Notes
 

@@ -52,6 +52,8 @@ Homepage = "https://github.com/sciwiz7/Blackscholes"
 Repository = "https://github.com/sciwiz7/Blackscholes"
 Issues = "https://github.com/sciwiz7/Blackscholes/issues"
 Changelog = "https://github.com/sciwiz7/Blackscholes/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/sciwiz7/Blackscholes/blob/main/docs/index.md"
+Releasing = "https://github.com/sciwiz7/Blackscholes/blob/main/docs/releasing.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/blackscholeslab", "demo"]
