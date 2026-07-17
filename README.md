@@ -19,8 +19,9 @@ and the mathematics is documented and inspectable.
 - Analytical Greeks: delta, gamma, vega, annual theta, rho, dividend rho.
 - Implied-volatility solving with European no-arbitrage bounds and finite negative
   rates/yields.
-- Payoff and scenario analysis: intrinsic payoff, long-option expiry P&L, ordered
-  expiry scenarios, and fixed-strike pre-expiry scenario repricing.
+- Payoff and scenario analysis: intrinsic payoff, long-option expiry P&L, signed
+  multi-leg strategy payoff profiles, ordered expiry scenarios, and fixed-strike
+  pre-expiry scenario repricing.
 - A command-line interface (`blackscholeslab`) with human-readable and
   deterministic JSON output.
 - An optional interactive Streamlit demonstration (`demo/`) over the public APIs.

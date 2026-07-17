@@ -20,9 +20,14 @@ from blackscholeslab.implied_volatility import ImpliedVolatilityInputs, implied_
 from blackscholeslab.models import BlackScholesInputs, OptionType
 from blackscholeslab.payoff import (
     ExpiryScenarioResult,
+    OptionLeg,
+    PayoffPoint,
+    UnderlyingLeg,
     evaluate_expiry_scenarios,
+    evaluate_strategy_profile,
     expiry_profit_loss,
     intrinsic_payoff,
+    strategy_payoff,
 )
 from blackscholeslab.pricing import price_european
 from blackscholeslab.scenarios import (
@@ -44,11 +49,16 @@ __all__ = [
     "ImpliedVolatilityInputs",
     "implied_volatility",
     "ExpiryScenarioResult",
+    "OptionLeg",
+    "UnderlyingLeg",
+    "PayoffPoint",
     "OptionScenario",
     "ScenarioPriceResult",
     "intrinsic_payoff",
     "expiry_profit_loss",
     "evaluate_expiry_scenarios",
+    "strategy_payoff",
+    "evaluate_strategy_profile",
     "evaluate_price_scenarios",
     "__version__",
     "__author__",

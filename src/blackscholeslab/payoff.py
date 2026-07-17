@@ -1,4 +1,4 @@
-"""Intrinsic payoff and expiry profit-and-loss for European options.
+"""Intrinsic payoff, expiry P&L, and multi-leg strategy payoff analysis.
 
 This module provides deterministic, explicitly validated payoff analysis for
 European call and put options. It does not price options and does not depend on
@@ -6,9 +6,11 @@ the pricing core. It reuses the shared :class:`OptionType` enumeration and the
 reusable validation helpers so that error semantics stay consistent with the
 rest of the toolkit.
 
-The functions here describe a single **long** option purchased for an explicitly
-supplied premium. They do not infer short positions, contract multipliers, or
-position quantities.
+The existing single-option APIs model one long option purchased for an
+explicitly supplied premium. The strategy APIs extend expiry-only analysis to
+signed option and underlying legs, without adding dividends, financing costs,
+margin mechanics, transaction costs, taxes, assignment, pre-expiry pricing, or
+contract multipliers.
 """
 
 from __future__ import annotations
@@ -33,6 +35,100 @@ class ExpiryScenarioResult:
     underlying_price: float
     payoff: float
     profit_loss: float
+
+
+@dataclass(frozen=True)
+class OptionLeg:
+    """Immutable option leg for expiry-only strategy payoff analysis.
+
+    ``quantity`` is a signed integer: positive for long exposure and negative
+    for short exposure. Zero quantity is rejected because it would add a
+    non-economic leg to the strategy.
+    """
+
+    option_type: OptionType
+    strike: float
+    premium: float
+    quantity: int
+
+    def __post_init__(self) -> None:
+        option_type = validate_option_type(self.option_type)
+        validate_real_number(self.strike, "strike", allow_negative=False, allow_zero=False)
+        validate_real_number(self.premium, "premium", allow_negative=False, allow_zero=True)
+        quantity = _validate_quantity(self.quantity)
+
+        object.__setattr__(self, "option_type", option_type)
+        object.__setattr__(self, "strike", float(self.strike))
+        object.__setattr__(self, "premium", float(self.premium))
+        object.__setattr__(self, "quantity", quantity)
+
+
+@dataclass(frozen=True)
+class UnderlyingLeg:
+    """Immutable underlying-asset leg for expiry-only strategy payoff analysis.
+
+    ``quantity`` is a signed integer: positive for long exposure and negative
+    for short exposure. ``entry_price`` is the per-unit entry price used for net
+    profit calculations.
+    """
+
+    entry_price: float
+    quantity: int
+
+    def __post_init__(self) -> None:
+        validate_real_number(
+            self.entry_price,
+            "entry_price",
+            allow_negative=False,
+            allow_zero=False,
+        )
+        quantity = _validate_quantity(self.quantity)
+
+        object.__setattr__(self, "entry_price", float(self.entry_price))
+        object.__setattr__(self, "quantity", quantity)
+
+
+@dataclass(frozen=True)
+class PayoffPoint:
+    """Immutable aggregate payoff result for one strategy spot at expiry.
+
+    Attributes:
+        spot_at_expiry: Underlying spot price evaluated at expiry.
+        gross_payoff: Aggregate gross payoff before entry costs and premiums.
+        net_profit: Aggregate net profit after option premiums and underlying
+            entry prices.
+    """
+
+    spot_at_expiry: float
+    gross_payoff: float
+    net_profit: float
+
+    def __post_init__(self) -> None:
+        validate_real_number(
+            self.spot_at_expiry,
+            "spot_at_expiry",
+            allow_negative=False,
+            allow_zero=True,
+        )
+        validate_real_number(
+            self.gross_payoff,
+            "gross_payoff",
+            allow_negative=True,
+            allow_zero=True,
+        )
+        validate_real_number(
+            self.net_profit,
+            "net_profit",
+            allow_negative=True,
+            allow_zero=True,
+        )
+
+        object.__setattr__(self, "spot_at_expiry", float(self.spot_at_expiry))
+        object.__setattr__(self, "gross_payoff", float(self.gross_payoff))
+        object.__setattr__(self, "net_profit", float(self.net_profit))
+
+
+StrategyLeg = OptionLeg | UnderlyingLeg
 
 
 def intrinsic_payoff(
@@ -177,3 +273,111 @@ def evaluate_expiry_scenarios(
         raise ValueError("underlying_prices must not be empty")
 
     return tuple(results)
+
+
+def strategy_payoff(
+    spot_at_expiry: float,
+    legs: Iterable[StrategyLeg],
+) -> PayoffPoint:
+    """Aggregate gross payoff and net profit for a strategy at expiry.
+
+    Option legs use these definitions:
+
+    ``gross payoff = quantity * intrinsic_payoff(...)``
+
+    ``net profit = quantity * (intrinsic_payoff(...) - premium)``
+
+    Underlying legs use these definitions:
+
+    ``gross payoff = quantity * spot_at_expiry``
+
+    ``net profit = quantity * (spot_at_expiry - entry_price)``
+
+    The function performs deterministic aggregation over the supplied legs. It
+    does not model dividends, financing costs, borrow fees, transaction costs,
+    taxes, margin mechanics, assignment, pre-expiry pricing, charts, or
+    contract multipliers.
+    """
+    validate_real_number(
+        spot_at_expiry,
+        "spot_at_expiry",
+        allow_negative=False,
+        allow_zero=True,
+    )
+    validated_legs = _validate_strategy_legs(legs)
+
+    return _strategy_payoff_from_validated_legs(float(spot_at_expiry), validated_legs)
+
+
+def evaluate_strategy_profile(
+    spot_prices: Iterable[float],
+    legs: Iterable[StrategyLeg],
+) -> tuple[PayoffPoint, ...]:
+    """Evaluate a multi-leg strategy over supplied expiry spot prices.
+
+    The supplied spot prices are evaluated in order. Order and duplicate prices
+    are preserved exactly. The spot iterable is consumed exactly once.
+    """
+    validated_legs = _validate_strategy_legs(legs)
+
+    results: list[PayoffPoint] = []
+    for index, spot in enumerate(spot_prices):
+        validate_real_number(
+            spot,
+            f"spot_prices[{index}]",
+            allow_negative=False,
+            allow_zero=True,
+        )
+        results.append(_strategy_payoff_from_validated_legs(float(spot), validated_legs))
+
+    if not results:
+        raise ValueError("spot_prices must not be empty")
+
+    return tuple(results)
+
+
+def _strategy_payoff_from_validated_legs(
+    spot_at_expiry: float,
+    legs: tuple[StrategyLeg, ...],
+) -> PayoffPoint:
+    gross_payoff = 0.0
+    net_profit = 0.0
+
+    for leg in legs:
+        if isinstance(leg, OptionLeg):
+            intrinsic = intrinsic_payoff(spot_at_expiry, leg.strike, leg.option_type)
+            gross_payoff += leg.quantity * intrinsic
+            net_profit += leg.quantity * (intrinsic - leg.premium)
+        elif isinstance(leg, UnderlyingLeg):
+            gross_payoff += leg.quantity * spot_at_expiry
+            net_profit += leg.quantity * (spot_at_expiry - leg.entry_price)
+        else:
+            raise TypeError("unsupported leg type")
+
+    return PayoffPoint(
+        spot_at_expiry=spot_at_expiry,
+        gross_payoff=gross_payoff,
+        net_profit=net_profit,
+    )
+
+
+def _validate_strategy_legs(legs: Iterable[StrategyLeg]) -> tuple[StrategyLeg, ...]:
+    validated: list[StrategyLeg] = []
+
+    for index, leg in enumerate(legs):
+        if not isinstance(leg, (OptionLeg, UnderlyingLeg)):
+            raise TypeError(f"unsupported leg at legs[{index}]")
+        validated.append(leg)
+
+    if not validated:
+        raise ValueError("legs must not be empty")
+
+    return tuple(validated)
+
+
+def _validate_quantity(quantity: int) -> int:
+    if isinstance(quantity, bool) or not isinstance(quantity, int):
+        raise TypeError("quantity must be an integer")
+    if quantity == 0:
+        raise ValueError("quantity must not be zero")
+    return quantity

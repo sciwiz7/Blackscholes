@@ -286,3 +286,73 @@ and a small usage example or cross-link.
 - [Mathematical conventions](mathematical-conventions.md)
 - [Command-line tutorial](tutorials/command-line-interface.md)
 - [Interactive-demo tutorial](tutorials/interactive-demo.md)
+
+## Strategy payoff analysis
+
+The payoff module also supports expiry-only multi-leg strategy analysis with
+signed option and underlying positions.
+
+### `OptionLeg`
+
+`OptionLeg(option_type, strike, premium, quantity)`
+
+Immutable option leg used by strategy payoff functions.
+
+- `option_type`: `OptionType.CALL` or `OptionType.PUT`
+- `strike`: positive strike price
+- `premium`: non-negative premium per option unit
+- `quantity`: signed integer quantity; positive is long, negative is short
+
+Zero quantity is rejected.
+
+### `UnderlyingLeg`
+
+`UnderlyingLeg(entry_price, quantity)`
+
+Immutable underlying-asset leg used by strategy payoff functions.
+
+- `entry_price`: positive entry price per underlying unit
+- `quantity`: signed integer quantity; positive is long, negative is short
+
+Zero quantity is rejected.
+
+### `PayoffPoint`
+
+`PayoffPoint(spot_at_expiry, gross_payoff, net_profit)`
+
+Immutable aggregate strategy result at one expiry spot.
+
+- `spot_at_expiry`: underlying spot price at expiry
+- `gross_payoff`: aggregate payoff before entry costs and option premiums
+- `net_profit`: aggregate profit after option premiums and underlying entry prices
+
+### `strategy_payoff`
+
+`strategy_payoff(spot_at_expiry, legs)`
+
+Aggregates a collection of `OptionLeg` and `UnderlyingLeg` instances at one
+expiry spot and returns a `PayoffPoint`.
+
+For an option leg:
+
+`gross_payoff = quantity * intrinsic_payoff(...)`
+
+`net_profit = quantity * (intrinsic_payoff(...) - premium)`
+
+For an underlying leg:
+
+`gross_payoff = quantity * spot_at_expiry`
+
+`net_profit = quantity * (spot_at_expiry - entry_price)`
+
+This function is intentionally expiry-only. It does not model dividends,
+financing costs, borrow fees, transaction costs, taxes, margin mechanics,
+assignment, pre-expiry pricing, charts, or contract multipliers.
+
+### `evaluate_strategy_profile`
+
+`evaluate_strategy_profile(spot_prices, legs)`
+
+Evaluates a multi-leg strategy over caller-supplied expiry spot prices and
+returns an immutable tuple of `PayoffPoint` results. Input spot order and
+duplicates are preserved.
