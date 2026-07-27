@@ -26,6 +26,24 @@ and the mathematics is documented and inspectable.
   deterministic JSON output.
 - An optional interactive Streamlit demonstration (`demo/`) over the public APIs.
 
+## Payoff API scopes
+
+BlackScholesLab intentionally separates three related payoff/scenario APIs:
+
+- `evaluate_expiry_scenarios` evaluates one long European option across supplied
+  expiry underlying prices. It returns `ExpiryScenarioResult` rows containing
+  `underlying_price`, intrinsic `payoff`, and long-option `profit_loss`.
+- `strategy_payoff` aggregates signed `OptionLeg` and `UnderlyingLeg` objects at
+  one expiry spot. It returns one `PayoffPoint` containing `spot_at_expiry`,
+  aggregate `gross_payoff`, and aggregate `net_profit`.
+- `evaluate_strategy_profile` applies the same multi-leg strategy aggregation
+  across caller-supplied expiry spot prices, preserving input order and
+  duplicates.
+
+The strategy APIs are expiry-only. They do not model dividends, financing costs,
+borrow fees, transaction costs, taxes, margin mechanics, assignment, pre-expiry
+pricing, charts, or contract multipliers.
+
 ## Requirements
 
 - Python **3.11 or newer** (`requires-python = ">=3.11"`).

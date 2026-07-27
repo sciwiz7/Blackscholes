@@ -33,7 +33,7 @@ src/blackscholeslab/
     pricing.py        # European Black-Scholes-Merton pricing
     greeks.py         # Analytical Greeks and OptionGreeks result model
     implied_volatility.py  # Implied-volatility solver and market-input model
-    payoff.py         # Intrinsic payoff, expiry P&L, expiry scenario evaluation
+    payoff.py         # Single-option payoff plus expiry-only strategy payoff analysis
     scenarios.py      # Pre-expiry scenario model and scenario repricing
 ```
 
@@ -364,8 +364,10 @@ its own fields on construction.
 
 - **Implied volatility** (implemented): reuses `models`, `validation`,
   `numerical`, and `price_european` as the pricing oracle for root-finding.
-- **Payoff analysis** (implemented): reuses `models` and `validation`. It does
-  not price options and does not depend on `pricing`.
+- **Payoff analysis** (implemented): reuses `models` and `validation`. It covers
+  intrinsic payoff, long-option expiry P&L, and expiry-only signed multi-leg
+  strategy aggregation. It does not price options and does not depend on
+  `pricing`.
 - **Scenario analysis** (implemented): reuses `models`, `validation`, and
   `pricing`, using `price_european` as its pricing oracle.
 - **CLI** (implemented): `cli.py` depends on the core (pricing, greeks,
@@ -409,5 +411,7 @@ values or silently clamp inputs.
 The European pricing core (`models`, `validation`, `numerical`, `pricing`), the
 analytical Greeks (`greeks.py`), the implied-volatility solver
 (`implied_volatility.py`), the payoff module (`payoff.py`), and the scenario
-module (`scenarios.py`) are implemented and tested. See [ROADMAP.md](../ROADMAP.md)
-for the staged plan and the remaining planned capabilities.
+module (`scenarios.py`) are implemented and tested. The payoff module includes
+single-option expiry analysis and expiry-only signed multi-leg strategy payoff
+aggregation. See [ROADMAP.md](../ROADMAP.md) for the staged plan and the
+remaining planned capabilities.
