@@ -64,9 +64,19 @@ state from future intent.
   options.
 - Expiry profit and loss after an explicitly paid premium (`expiry_profit_loss`)
   with explicit long-option and no-multiplier semantics.
-- Ordered expiry payoff/P&L evaluation (`evaluate_expiry_scenarios`) that
-  preserves input order and duplicate underlying prices and returns an immutable
-  tuple.
+- Ordered single-option expiry payoff/P&L evaluation
+  (`evaluate_expiry_scenarios`) that preserves input order and duplicate
+  underlying prices and returns an immutable tuple.
+- Immutable signed strategy leg models:
+  - `OptionLeg` for long and short option positions.
+  - `UnderlyingLeg` for long and short underlying positions.
+- Immutable aggregate strategy result model (`PayoffPoint`) with
+  `spot_at_expiry`, `gross_payoff`, and `net_profit`.
+- Expiry-only multi-leg strategy payoff aggregation (`strategy_payoff`) using
+  signed integer quantities.
+- Ordered multi-spot strategy payoff profile evaluation
+  (`evaluate_strategy_profile`) that preserves input order and duplicate expiry
+  spot prices.
 - Immutable pre-expiry scenario definitions (`OptionScenario`).
 - Pre-expiry option repricing under scenario assumptions
   (`evaluate_price_scenarios`), reusing `price_european` as the single pricing

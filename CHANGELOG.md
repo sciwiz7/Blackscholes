@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No changes yet.
+### Added
+
+- Expiry-only multi-leg strategy payoff analysis:
+  - `OptionLeg` for signed option positions.
+  - `UnderlyingLeg` for signed underlying positions.
+  - `PayoffPoint` for aggregate strategy payoff and net profit results.
+  - `strategy_payoff` for one expiry spot.
+  - `evaluate_strategy_profile` for ordered caller-supplied expiry spot profiles.
+  - Reference coverage for long/short options, bull call spreads, long straddles,
+    covered calls, protective puts, validation, order preservation, and duplicate
+    preservation.
 
 ## [0.1.0]
 

@@ -8,10 +8,15 @@ import pytest
 
 from blackscholeslab import (
     ExpiryScenarioResult,
+    OptionLeg,
     OptionType,
+    PayoffPoint,
+    UnderlyingLeg,
     evaluate_expiry_scenarios,
+    evaluate_strategy_profile,
     expiry_profit_loss,
     intrinsic_payoff,
+    strategy_payoff,
 )
 
 ABS_TOL = 1e-10
@@ -303,3 +308,147 @@ def test_expiry_pnl_invalid_premium(bad_premium: object) -> None:
 def test_zero_underlying_price_allowed() -> None:
     assert intrinsic_payoff(0.0, 100.0, OptionType.CALL) == 0.0
     assert intrinsic_payoff(0.0, 100.0, OptionType.PUT) == 100.0
+
+
+# --------------------------------------------------------------------------- #
+# Multi-leg strategy payoff and net profit
+# --------------------------------------------------------------------------- #
+
+
+def test_long_call_strategy_payoff_reference() -> None:
+    leg = OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=7.0, quantity=1)
+
+    point = strategy_payoff(120.0, (leg,))
+
+    assert point == PayoffPoint(
+        spot_at_expiry=120.0,
+        gross_payoff=20.0,
+        net_profit=13.0,
+    )
+
+
+def test_short_call_strategy_payoff_reference() -> None:
+    leg = OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=7.0, quantity=-1)
+
+    point = strategy_payoff(120.0, (leg,))
+
+    assert point.gross_payoff == pytest.approx(-20.0, abs=ABS_TOL)
+    assert point.net_profit == pytest.approx(-13.0, abs=ABS_TOL)
+
+
+def test_bull_call_spread_reference() -> None:
+    legs = (
+        OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=6.0, quantity=1),
+        OptionLeg(option_type=OptionType.CALL, strike=110.0, premium=2.0, quantity=-1),
+    )
+
+    point = strategy_payoff(120.0, legs)
+
+    assert point.gross_payoff == pytest.approx(10.0, abs=ABS_TOL)
+    assert point.net_profit == pytest.approx(6.0, abs=ABS_TOL)
+
+
+def test_long_straddle_reference() -> None:
+    legs = (
+        OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=4.0, quantity=1),
+        OptionLeg(option_type=OptionType.PUT, strike=100.0, premium=3.0, quantity=1),
+    )
+
+    below = strategy_payoff(80.0, legs)
+    at_strike = strategy_payoff(100.0, legs)
+    above = strategy_payoff(120.0, legs)
+
+    assert below.gross_payoff == pytest.approx(20.0, abs=ABS_TOL)
+    assert below.net_profit == pytest.approx(13.0, abs=ABS_TOL)
+    assert at_strike.gross_payoff == pytest.approx(0.0, abs=ABS_TOL)
+    assert at_strike.net_profit == pytest.approx(-7.0, abs=ABS_TOL)
+    assert above.gross_payoff == pytest.approx(20.0, abs=ABS_TOL)
+    assert above.net_profit == pytest.approx(13.0, abs=ABS_TOL)
+
+
+def test_covered_call_reference_with_underlying_leg() -> None:
+    legs = (
+        UnderlyingLeg(entry_price=100.0, quantity=1),
+        OptionLeg(option_type=OptionType.CALL, strike=110.0, premium=4.0, quantity=-1),
+    )
+
+    point = strategy_payoff(120.0, legs)
+
+    assert point.gross_payoff == pytest.approx(110.0, abs=ABS_TOL)
+    assert point.net_profit == pytest.approx(14.0, abs=ABS_TOL)
+
+
+def test_protective_put_reference_with_underlying_leg() -> None:
+    legs = (
+        UnderlyingLeg(entry_price=100.0, quantity=1),
+        OptionLeg(option_type=OptionType.PUT, strike=95.0, premium=3.0, quantity=1),
+    )
+
+    point = strategy_payoff(80.0, legs)
+
+    assert point.gross_payoff == pytest.approx(95.0, abs=ABS_TOL)
+    assert point.net_profit == pytest.approx(-8.0, abs=ABS_TOL)
+
+
+def test_strategy_profile_preserves_order_and_duplicates() -> None:
+    legs = (OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=5.0, quantity=1),)
+
+    profile = evaluate_strategy_profile([90.0, 120.0, 90.0], legs)
+
+    assert profile == (
+        PayoffPoint(spot_at_expiry=90.0, gross_payoff=0.0, net_profit=-5.0),
+        PayoffPoint(spot_at_expiry=120.0, gross_payoff=20.0, net_profit=15.0),
+        PayoffPoint(spot_at_expiry=90.0, gross_payoff=0.0, net_profit=-5.0),
+    )
+
+
+def test_strategy_profile_returns_immutable_tuple() -> None:
+    legs = (OptionLeg(option_type=OptionType.PUT, strike=100.0, premium=5.0, quantity=1),)
+
+    profile = evaluate_strategy_profile((80.0, 100.0), legs)
+
+    assert isinstance(profile, tuple)
+
+
+def test_strategy_rejects_empty_legs() -> None:
+    with pytest.raises(ValueError, match="legs must not be empty"):
+        strategy_payoff(100.0, ())
+
+
+def test_strategy_profile_rejects_empty_spots() -> None:
+    legs = (OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=5.0, quantity=1),)
+
+    with pytest.raises(ValueError, match="spot_prices must not be empty"):
+        evaluate_strategy_profile((), legs)
+
+
+def test_option_leg_rejects_zero_quantity() -> None:
+    with pytest.raises(ValueError, match="quantity must not be zero"):
+        OptionLeg(option_type=OptionType.CALL, strike=100.0, premium=5.0, quantity=0)
+
+
+@pytest.mark.parametrize("bad_quantity", [1.5, True, "1", None])
+def test_option_leg_rejects_non_integer_quantity(bad_quantity: object) -> None:
+    with pytest.raises(TypeError, match="quantity"):
+        OptionLeg(
+            option_type=OptionType.CALL,
+            strike=100.0,
+            premium=5.0,
+            quantity=bad_quantity,  # type: ignore[arg-type]
+        )
+
+
+def test_underlying_leg_rejects_zero_quantity() -> None:
+    with pytest.raises(ValueError, match="quantity must not be zero"):
+        UnderlyingLeg(entry_price=100.0, quantity=0)
+
+
+@pytest.mark.parametrize("bad_quantity", [1.5, True, "1", None])
+def test_underlying_leg_rejects_non_integer_quantity(bad_quantity: object) -> None:
+    with pytest.raises(TypeError, match="quantity"):
+        UnderlyingLeg(entry_price=100.0, quantity=bad_quantity)  # type: ignore[arg-type]
+
+
+def test_strategy_rejects_unknown_leg_type() -> None:
+    with pytest.raises(TypeError, match="unsupported leg"):
+        strategy_payoff(100.0, (object(),))  # type: ignore[arg-type]

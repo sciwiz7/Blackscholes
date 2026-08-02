@@ -258,6 +258,74 @@ Conventions:
 - The break-even underlying price is `K + premium` for a call and `K - premium`
   for a put.
 
+## Multi-leg strategy payoff and net profit
+
+The strategy payoff helpers evaluate deterministic expiry-only outcomes for
+collections of `OptionLeg` and `UnderlyingLeg` objects. They do not price
+options before expiry and do not model dividends, financing costs, borrow fees,
+transaction costs, taxes, margin mechanics, assignment, charts, or contract
+multipliers.
+
+### Signed quantity convention
+
+Every strategy leg has an integer `quantity`:
+
+- Positive quantity means a long position.
+- Negative quantity means a short position.
+- Zero quantity is rejected.
+
+Fractional, boolean, string, `None`, and non-integer quantities are rejected.
+
+### Option legs
+
+An `OptionLeg` contains an `option_type`, `strike`, `premium`, and signed
+`quantity`. `premium` is the non-negative premium per option unit from the long
+holder perspective.
+
+For each option leg at expiry spot `S`:
+
+```
+
+option_gross_payoff = quantity * intrinsic_payoff(S, strike, option_type)
+option_net_profit = quantity * (intrinsic_payoff(S, strike, option_type) - premium)
+
+```
+
+This convention handles long and short option positions without changing the
+premium sign manually. A short option is represented by a negative quantity.
+
+### Underlying legs
+
+An `UnderlyingLeg` contains an `entry_price` and signed `quantity`.
+
+For each underlying leg at expiry spot `S`:
+
+```
+
+underlying_gross_payoff = quantity * S
+underlying_net_profit = quantity * (S - entry_price)
+
+```
+
+This allows strategies such as covered calls and protective puts to combine an
+underlying position with option legs.
+
+### Aggregate strategy result
+
+`strategy_payoff` sums the gross payoff and net profit of all supplied legs and
+returns a `PayoffPoint`:
+
+```
+
+gross_payoff = sum(leg gross payoffs)
+net_profit = sum(leg net profits)
+
+```
+
+`evaluate_strategy_profile` applies the same aggregation over caller-supplied
+expiry spot prices. It preserves input order and duplicates and returns an
+immutable tuple of `PayoffPoint` results.
+
 ## Scenario analysis
 
 `evaluate_price_scenarios` reprices a European option under pre-expiry scenario
